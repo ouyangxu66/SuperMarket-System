@@ -1,0 +1,25 @@
+server:
+  port: 8080 # 后端服务启动端口
+
+spring:
+  application:
+    name: supermarket-backend
+
+  # 数据库配置 (后续创建数据库后，请修改这里的 username 和 password)
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://localhost:3306/supermarket_db?useUnicode=true&characterEncoding=utf-8&useSSL=false&serverTimezone=Asia/Shanghai
+    username: root
+    password: password # 请修改为你本地的 MySQL 密码
+
+  # Spring Security 临时配置 (避免开发初期所有接口都被拦截)
+  security:
+    user:
+      name: admin
+      password: 123456 # 临时默认登录密码
+
+# MyBatis-Plus 配置
+mybatis-plus:
+  configuration:
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl # 在控制台打印 SQL 语句，方便调试
+  mapper-locations: classpath:mapper/**/*.xml # Mapper XML 文件位置
