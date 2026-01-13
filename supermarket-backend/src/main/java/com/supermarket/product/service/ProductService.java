@@ -5,6 +5,9 @@ import com.baomidou.mybatisplus.extension.service.IService;
 import com.supermarket.product.dto.ProductFormDTO;
 import com.supermarket.product.entity.Product;
 
+import java.util.Date;
+import java.util.List;
+
 /**
  * 商品服务接口
  * 负责商品的增删改查等功能
@@ -36,4 +39,17 @@ public interface ProductService extends IService<Product> {
      * 修改商品状态 (上架/下架)
      */
     void updateStatus(Long id, Integer status);
+    
+    /**
+     * 获取即将过期的商品列表
+     * @param expiringDate 到期日期
+     * @return 即将过期的商品列表
+     */
+    List<Product> getExpiringSoonProducts(Date expiringDate);
+    
+    /**
+     * 获取已过期的商品列表
+     * @return 已过期的商品列表
+     */
+    List<Product> getExpiredProducts();
 }

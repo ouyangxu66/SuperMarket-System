@@ -5,10 +5,6 @@ import java.io.Serializable;
 import java.math.BigDecimal;
 import java.util.Date;
 
-/**
- * 商品实体类
- * 对应表: product
- */
 @TableName("product")
 public class Product implements Serializable {
 
@@ -30,6 +26,11 @@ public class Product implements Serializable {
     private Integer lowStockThreshold;
     private Integer status;
     private String remark;
+
+    // 添加过期日期相关字段
+    private Date latestProductionDate;  // 最新生产日期
+    private Integer shelfLifeDays;      // 保质期天数
+    private Date earliestExpirationDate; // 最早到期日期
 
     @TableField(fill = FieldFill.INSERT)
     private Date createTime;
@@ -66,6 +67,17 @@ public class Product implements Serializable {
     public void setStatus(Integer status) { this.status = status; }
     public String getRemark() { return remark; }
     public void setRemark(String remark) { this.remark = remark; }
+    
+    // 新增字段的getter/setter
+    public Date getLatestProductionDate() { return latestProductionDate; }
+    public void setLatestProductionDate(Date latestProductionDate) { this.latestProductionDate = latestProductionDate; }
+    
+    public Integer getShelfLifeDays() { return shelfLifeDays; }
+    public void setShelfLifeDays(Integer shelfLifeDays) { this.shelfLifeDays = shelfLifeDays; }
+    
+    public Date getEarliestExpirationDate() { return earliestExpirationDate; }
+    public void setEarliestExpirationDate(Date earliestExpirationDate) { this.earliestExpirationDate = earliestExpirationDate; }
+    
     public Date getCreateTime() { return createTime; }
     public void setCreateTime(Date createTime) { this.createTime = createTime; }
     public Date getUpdateTime() { return updateTime; }

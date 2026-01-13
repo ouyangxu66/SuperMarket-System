@@ -271,6 +271,9 @@ GET /api/product/page?pageNum=1&pageSize=10&name=可乐&categoryId=1&status=1
         "lowStockThreshold": 10,
         "status": 1,
         "remark": "碳酸饮料",
+        "latestProductionDate": "2025-12-01",
+        "shelfLifeDays": 365,
+        "earliestExpirationDate": "2026-11-30",
         "createTime": "2026-01-09T10:30:00",
         "updateTime": "2026-01-09T10:30:00"
       }
@@ -301,7 +304,9 @@ GET /api/product/page?pageNum=1&pageSize=10&name=可乐&categoryId=1&status=1
   "stock": 100,
   "lowStockThreshold": 10,
   "status": 1,
-  "remark": "碳酸饮料"
+  "remark": "碳酸饮料",
+  "latestProductionDate": "2025-12-01",
+  "shelfLifeDays": 365
 }
 ```
 
@@ -333,7 +338,9 @@ GET /api/product/page?pageNum=1&pageSize=10&name=可乐&categoryId=1&status=1
   "stock": 100,
   "lowStockThreshold": 10,
   "status": 1,
-  "remark": "碳酸饮料"
+  "remark": "碳酸饮料",
+  "latestProductionDate": "2025-12-01",
+  "shelfLifeDays": 365
 }
 ```
 
@@ -412,9 +419,85 @@ GET /api/product/barcode/6901234567890
     "lowStockThreshold": 10,
     "status": 1,
     "remark": "碳酸饮料",
+    "latestProductionDate": "2025-12-01",
+    "shelfLifeDays": 365,
+    "earliestExpirationDate": "2026-11-30",
     "createTime": "2026-01-09T10:30:00",
     "updateTime": "2026-01-09T10:30:00"
   }
+}
+```
+
+#### 获取即将过期的商品列表
+| 接口描述 | URL | 请求方式 | 请求头 | 参数 | 响应 |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| 获取即将过期的商品列表 | `/api/product/expiring-soon` | GET | `Authorization: Bearer <token>` | `days=7` (临期天数) | 见下方示例 |
+
+**请求示例：**
+```
+GET /api/product/expiring-soon?days=7
+```
+
+**响应示例：**
+```json
+{
+  "code": 200,
+  "message": "操作成功",
+  "data": [
+    {
+      "id": 1,
+      "categoryId": 1,
+      "barcode": "6901234567890",
+      "name": "牛奶",
+      "spec": "1L",
+      "unit": "盒",
+      "price": 12.00,
+      "costPrice": 8.00,
+      "stock": 50,
+      "lowStockThreshold": 10,
+      "status": 1,
+      "remark": "鲜奶",
+      "latestProductionDate": "2026-01-01",
+      "shelfLifeDays": 7,
+      "earliestExpirationDate": "2026-01-08",
+      "createTime": "2026-01-01T10:30:00",
+      "updateTime": "2026-01-01T10:30:00"
+    }
+  ]
+}
+```
+
+#### 获取已过期的商品列表
+| 接口描述 | URL | 请求方式 | 请求头 | 参数 | 响应 |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| 获取已过期的商品列表 | `/api/product/expired` | GET | `Authorization: Bearer <token>` | 无 | 见下方示例 |
+
+**响应示例：**
+```json
+{
+  "code": 200,
+  "message": "操作成功",
+  "data": [
+    {
+      "id": 1,
+      "categoryId": 1,
+      "barcode": "6901234567890",
+      "name": "面包",
+      "spec": "400g",
+      "unit": "袋",
+      "price": 8.00,
+      "costPrice": 5.00,
+      "stock": 5,
+      "lowStockThreshold": 10,
+      "status": 1,
+      "remark": "全麦面包",
+      "latestProductionDate": "2025-12-25",
+      "shelfLifeDays": 5,
+      "earliestExpirationDate": "2025-12-30",
+      "createTime": "2025-12-25T10:30:00",
+      "updateTime": "2025-12-25T10:30:00"
+    }
+  ]
 }
 ```
 
@@ -525,6 +608,270 @@ DELETE /product/category/1
   "code": 200,
   "message": "操作成功",
   "data": true
+}
+```
+
+### 2.5 库存管理模块 (Inventory)
+
+#### 获取库存预警商品列表
+| 接口描述 | URL | 请求方式 | 请求头 | 参数 | 响应 |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| 获取库存预警商品列表 | `/inventory/low-stock` | GET | `Authorization: Bearer <token>` | 无 | 见下方示例 |
+
+**响应示例：**
+```json
+{
+  "code": 200,
+  "message": "操作成功",
+  "data": [
+    {
+      "id": 1,
+      "categoryId": 1,
+      "barcode": "6901234567890",
+      "name": "可口可乐",
+      "spec": "500ml",
+      "unit": "瓶",
+      "price": 3.50,
+      "costPrice": 2.80,
+      "stock": 5,
+      "lowStockThreshold": 10,
+      "status": 1,
+      "remark": "碳酸饮料",
+      "latestProductionDate": "2025-12-01",
+      "shelfLifeDays": 365,
+      "earliestExpirationDate": "2026-11-30",
+      "createTime": "2026-01-09T10:30:00",
+      "updateTime": "2026-01-09T10:30:00"
+    }
+  ]
+}
+```
+
+#### 检查单个商品是否库存不足
+| 接口描述 | URL | 请求方式 | 请求头 | 参数 | 响应 |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| 检查单个商品是否库存不足 | `/inventory/check-low-stock/{id}` | GET | `Authorization: Bearer <token>` | `id` (路径参数) | 见下方示例 |
+
+**请求示例：**
+```
+GET /inventory/check-low-stock/1
+```
+
+**响应示例：**
+```json
+{
+  "code": 200,
+  "message": "操作成功",
+  "data": true
+}
+```
+
+#### 获取库存详情
+| 接口描述 | URL | 请求方式 | 请求头 | 参数 | 响应 |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| 获取库存详情 | `/inventory/detail/{id}` | GET | `Authorization: Bearer <token>` | `id` (路径参数) | 见下方示例 |
+
+**请求示例：**
+```
+GET /inventory/detail/1
+```
+
+**响应示例：**
+```json
+{
+  "code": 200,
+  "message": "操作成功",
+  "data": {
+    "id": 1,
+    "categoryId": 1,
+    "barcode": "6901234567890",
+    "name": "可口可乐",
+    "spec": "500ml",
+    "unit": "瓶",
+    "price": 3.50,
+    "costPrice": 2.80,
+    "stock": 100,
+    "lowStockThreshold": 10,
+    "status": 1,
+    "remark": "碳酸饮料",
+    "latestProductionDate": "2025-12-01",
+    "shelfLifeDays": 365,
+    "earliestExpirationDate": "2026-11-30",
+    "createTime": "2026-01-09T10:30:00",
+    "updateTime": "2026-01-09T10:30:00"
+  }
+}
+```
+
+### 2.6 库存盘点模块 (Inventory Count)
+
+#### 分页查询盘点列表
+| 接口描述 | URL | 请求方式 | 请求头 | 参数 | 响应 |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| 分页查询盘点列表 | `/inventory/count/page` | GET | `Authorization: Bearer <token>` | `pageNum=1&pageSize=10&title=盘点任务&status=DRAFT` | 见下方示例 |
+
+**请求示例：**
+```
+GET /inventory/count/page?pageNum=1&pageSize=10&title=盘点任务&status=DRAFT
+```
+
+**响应示例：**
+```json
+{
+  "code": 200,
+  "message": "操作成功",
+  "data": {
+    "records": [
+      {
+        "id": 1,
+        "countNumber": "PC202601130001",
+        "title": "第一季度盘点",
+        "description": "第一季度商品库存盘点",
+        "totalCount": 100,
+        "discrepancyCount": 5,
+        "status": "IN_PROGRESS",
+        "startTime": "2026-01-13T10:00:00",
+        "endTime": null,
+        "operatorId": 1,
+        "operatorName": "管理员",
+        "createTime": "2026-01-13T09:00:00",
+        "updateTime": "2026-01-13T10:00:00"
+      }
+    ],
+    "total": 1,
+    "size": 10,
+    "current": 1,
+    "pages": 1
+  }
+}
+```
+
+#### 创建盘点任务
+| 接口描述 | URL | 请求方式 | 请求头 | 参数 | 响应 |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| 创建盘点任务 | `/inventory/count` | POST | `Authorization: Bearer <token>` | 见下方示例 | 见下方示例 |
+
+**请求示例：**
+```json
+{
+  "title": "第一季度盘点",
+  "description": "第一季度商品库存盘点",
+  "operatorId": 1,
+  "operatorName": "管理员",
+  "remark": "重要盘点任务"
+}
+```
+
+**响应示例：**
+```json
+{
+  "code": 200,
+  "message": "操作成功",
+  "data": 1
+}
+```
+
+#### 开始盘点
+| 接口描述 | URL | 请求方式 | 请求头 | 参数 | 响应 |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| 开始盘点 | `/inventory/count/{id}/start` | PUT | `Authorization: Bearer <token>` | `id` (路径参数) | 见下方示例 |
+
+**请求示例：**
+```
+PUT /inventory/count/1/start
+```
+
+**响应示例：**
+```json
+{
+  "code": 200,
+  "message": "开始盘点成功",
+  "data": null
+}
+```
+
+#### 完成盘点
+| 接口描述 | URL | 请求方式 | 请求头 | 参数 | 响应 |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| 完成盘点 | `/inventory/count/{id}/complete` | PUT | `Authorization: Bearer <token>` | `id` (路径参数) | 见下方示例 |
+
+**请求示例：**
+```
+PUT /inventory/count/1/complete
+```
+
+**响应示例：**
+```json
+{
+  "code": 200,
+  "message": "完成盘点成功",
+  "data": null
+}
+```
+
+#### 获取盘点详情列表
+| 接口描述 | URL | 请求方式 | 请求头 | 参数 | 响应 |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| 获取盘点详情列表 | `/inventory/count/{id}/details` | GET | `Authorization: Bearer <token>` | `id` (路径参数) | 见下方示例 |
+
+**请求示例：**
+```
+GET /inventory/count/1/details
+```
+
+**响应示例：**
+```json
+{
+  "code": 200,
+  "message": "操作成功",
+  "data": [
+    {
+      "id": 1,
+      "countId": 1,
+      "productId": 1,
+      "productName": "可口可乐",
+      "productBarcode": "6901234567890",
+      "productSpec": "500ml",
+      "productUnit": "瓶",
+      "systemStock": 100,
+      "actualStock": 95,
+      "difference": -5,
+      "status": "DISCREPANCY",
+      "discrepancyReason": "销售未及时录入",
+      "remark": "需关注",
+      "createTime": "2026-01-13T10:30:00",
+      "updateTime": "2026-01-13T10:30:00"
+    }
+  ]
+}
+```
+
+#### 添加盘点详情
+| 接口描述 | URL | 请求方式 | 请求头 | 参数 | 响应 |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| 添加盘点详情 | `/inventory/count/{countId}/detail` | POST | `Authorization: Bearer <token>` | `countId` (路径参数), 请求体见下方示例 | 见下方示例 |
+
+**请求示例：**
+```json
+{
+  "productId": 1,
+  "productName": "可口可乐",
+  "productBarcode": "6901234567890",
+  "productSpec": "500ml",
+  "productUnit": "瓶",
+  "systemStock": 100,
+  "actualStock": 95,
+  "discrepancyReason": "销售未及时录入",
+  "remark": "需关注"
+}
+```
+
+**响应示例：**
+```json
+{
+  "code": 200,
+  "message": "添加盘点详情成功",
+  "data": null
 }
 ```
 
