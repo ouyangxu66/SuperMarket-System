@@ -39,3 +39,16 @@ export function logout() {
     method: 'post'
   })
 }
+
+/**
+ * 修改密码
+ * @param {Object} data { oldPassword, newPassword }
+ * @returns {Promise}
+ */
+export function updatePassword(data) {
+  return request({
+    url: '/auth/password',
+    method: 'post',
+    data
+  })
+}

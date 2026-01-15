@@ -89,6 +89,28 @@
 }
 ```
 
+#### 修改密码
+| 接口描述 | URL | 请求方式 | 参数 | 响应 |
+| :--- | :--- | :--- | :--- | :--- |
+| 修改密码 | `/auth/password` | POST | `Authorization: Bearer <token>` | 见下方示例 |
+
+**请求示例：**
+```json
+{
+  "oldPassword": "old",
+  "newPassword": "new"
+}
+```
+
+**响应示例：**
+```json
+{
+  "code": 200,
+  "message": "密码修改成功",
+  "data": null
+}
+```
+
 ### 2.2 用户管理模块 (User)
 
 #### 分页查询用户列表

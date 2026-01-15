@@ -13,7 +13,7 @@ import org.springframework.web.bind.annotation.*;
  * 销售相关接口
  */
 @RestController
-@RequestMapping("/api/sale")
+@RequestMapping("/sale")
 public class SaleController {
 
     private final SaleService saleService;

@@ -14,7 +14,7 @@ import org.springframework.web.bind.annotation.*;
  * 进货单管理控制器
  */
 @RestController
-@RequestMapping("/api/store/purchase")
+@RequestMapping("/store/purchase")
 public class PurchaseController {
 
     private final PurchaseService purchaseService;

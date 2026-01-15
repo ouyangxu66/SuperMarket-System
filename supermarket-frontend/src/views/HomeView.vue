@@ -166,6 +166,8 @@ const handleCommand = async (command) => {
     ElMessage.success('已退出登录')
     // 跳转回登录页
     router.push('/login')
+  } else if (command === 'profile') {
+    router.push('/profile')
   }
 }
 </script>

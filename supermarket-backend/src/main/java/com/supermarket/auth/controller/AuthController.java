@@ -2,6 +2,7 @@ package com.supermarket.auth.controller;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.supermarket.auth.dto.LoginDto;
+import com.supermarket.auth.dto.UpdatePasswordDto;
 import com.supermarket.auth.dto.UserInfoVO;
 import com.supermarket.common.result.Result;
 import com.supermarket.common.utils.JwtUtils;
@@ -11,6 +12,7 @@ import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Collections;
@@ -29,15 +31,18 @@ public class AuthController {
     private final AuthenticationManager authenticationManager;
     private final JwtUtils jwtUtils;
     private final UserService userService;
+    private final PasswordEncoder passwordEncoder;
 
     // 2. 构造器注入 (Constructor Injection)
     // Spring 容器在初始化 Bean 时，会自动寻找构造器并注入依赖
     public AuthController(AuthenticationManager authenticationManager,
                           JwtUtils jwtUtils,
-                          UserService userService) {
+                          UserService userService,
+                          PasswordEncoder passwordEncoder) {
         this.authenticationManager = authenticationManager;
         this.jwtUtils = jwtUtils;
         this.userService = userService;
+        this.passwordEncoder = passwordEncoder;
     }
 
     /**
@@ -112,4 +117,33 @@ public class AuthController {
         // 这里直接返回成功，由前端清除本地存储的 Token
         return Result.success("退出成功");
     }
+
+    /**
+     * 修改密码
+     * POST /auth/password
+     */
+    @PostMapping("/password")
+    public Result<String> updatePassword(@RequestBody UpdatePasswordDto dto) {
+        // 1. 获取当前登录用户名
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        String username = authentication.getName();
+
+        // 2. 查询用户
+        User user = userService.getOne(new LambdaQueryWrapper<User>().eq(User::getUsername, username));
+        if (user == null) {
+            return Result.error("用户不存在");
+        }
+
+        // 3. 校验旧密码
+        if (!passwordEncoder.matches(dto.getOldPassword(), user.getPassword())) {
+            return Result.error("旧密码错误");
+        }
+
+        // 4. 更新密码
+        user.setPassword(passwordEncoder.encode(dto.getNewPassword()));
+        userService.updateById(user);
+
+        return Result.success("密码修改成功");
+    }
 }
+

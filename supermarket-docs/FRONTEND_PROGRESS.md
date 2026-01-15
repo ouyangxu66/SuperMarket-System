@@ -22,18 +22,25 @@
 - [x] 顶部导航栏 (Top Navbar)
 
 ### 4. 用户管理模块 (User Module)
-- [ ] 用户列表页面 (User List Page)
-- [ ] 用户新增/编辑 (User Create/Edit)
-- [ ] 用户删除 (User Delete)
+- [x] 用户列表页面 (User List Page)
+- [x] 用户新增/编辑 (User Create/Edit)
+- [x] 用户删除 (User Delete)
 
 ### 5. 商品管理模块 (Product Module)
-- [ ] 商品列表页面 (Product List Page)
-- [ ] 商品新增/编辑 (Product Create/Edit)
-- [ ] 商品分类管理 (Category Management)
+- [x] 商品列表页面 (Product List Page)
+- [x] 商品新增/编辑 (Product Create/Edit)
+- [x] 商品分类管理 (Category Management)
 
 ### 6. 库存管理模块 (Inventory Module)
-- [ ] 库存列表 (Inventory List)
-- [ ] 库存盘点 (Inventory Count)
+- [x] 库存列表 (Inventory List)
+- [x] 库存盘点 (Inventory Count)
+- [x] 盘点详情录入 (Inventory Count Detail)
+- [x] 库存预警与临期提醒 (Stock & Expiration Alerts)
+
+### 7. 个人中心 (Profile)
+- [x] 个人信息展示 (User Info Display)
+- [x] 基本资料修改 (Basic Info Edit)
+- [x] 修改密码 (Change Password)
 
 ## 📝 开发日志 (Development Log)
 - **2026-01-15**: 项目初始化完成，创建了基本的项目结构和配置文件。

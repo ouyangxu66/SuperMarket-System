@@ -16,7 +16,7 @@ import java.util.Date;
  * 提供商品的增删改查接口
  */
 @RestController
-@RequestMapping("/api/product")
+@RequestMapping("/product")
 public class ProductController {
 
     private final ProductService productService;

@@ -22,7 +22,51 @@ const router = createRouter({
     {
       path: '/',
       name: 'home',
-      component: () => import('../views/HomeView.vue')
+      component: () => import('../views/HomeView.vue'),
+      children: [
+        {
+          path: '/user/list',
+          name: 'user-list',
+          component: () => import('../views/user/UserListView.vue'),
+          meta: { title: '用户列表' }
+        },
+        {
+          path: '/product/list',
+          name: 'product-list',
+          component: () => import('../views/product/ProductListView.vue'),
+          meta: { title: '商品列表' }
+        },
+        {
+          path: '/product/category',
+          name: 'product-category',
+          component: () => import('../views/product/CategoryView.vue'),
+          meta: { title: '商品分类' }
+        },
+        {
+          path: '/inventory/list',
+          name: 'inventory-list',
+          component: () => import('../views/inventory/InventoryListView.vue'),
+          meta: { title: '库存列表' }
+        },
+        {
+          path: '/inventory/count',
+          name: 'inventory-count',
+          component: () => import('../views/inventory/InventoryCountView.vue'),
+          meta: { title: '库存盘点' }
+        },
+        {
+          path: '/inventory/count/:id',
+          name: 'inventory-count-detail',
+          component: () => import('../views/inventory/InventoryCountDetailView.vue'),
+          meta: { title: '盘点详情' }
+        },
+        {
+          path: '/profile',
+          name: 'profile',
+          component: () => import('../views/ProfileView.vue'),
+          meta: { title: '个人中心' }
+        }
+      ]
     }
   ]
 })
