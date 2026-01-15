@@ -144,7 +144,7 @@ public class InventoryCountController {
         InventoryCountDetail detail = new InventoryCountDetail();
         detail.setId(id);
         detail.setDeleted(1); // 逻辑删除
-        inventoryCountService.updateById(detail);
+        inventoryCountService.updateDetail(detail);
         return Result.success("删除盘点详情成功");
     }
 }

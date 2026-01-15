@@ -1,6 +1,5 @@
 package com.supermarket.config;
 
-
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -12,15 +11,16 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
 
 @Configuration
 @EnableWebSecurity
 public class SecurityConfig {
 
-    private final JwtAuthenticationFilter jwtAuthenticationFilter;
+    private final JwtAuthenticationTokenFilter jwtAuthenticationTokenFilter;
 
-    public SecurityConfig(JwtAuthenticationFilter jwtAuthenticationFilter) {
-        this.jwtAuthenticationFilter = jwtAuthenticationFilter;
+    public SecurityConfig(JwtAuthenticationTokenFilter jwtAuthenticationTokenFilter) {
+        this.jwtAuthenticationTokenFilter = jwtAuthenticationTokenFilter;
     }
 
     /**
@@ -61,17 +61,19 @@ public class SecurityConfig {
                 .and()
 
                 // 4. 请求权限配置
-                .authorizeRequests()
+                .authorizeHttpRequests()
                 // 放行登录接口，允许匿名访问
-                .antMatchers("/auth/login").permitAll()
+                .requestMatchers(new AntPathRequestMatcher("/auth/login", "POST")).permitAll()
+                .requestMatchers(new AntPathRequestMatcher("/auth/info", "GET")).authenticated()
+                .requestMatchers(new AntPathRequestMatcher("/auth/logout", "POST")).authenticated()
                 // 放行静态资源 (如果需要)
-                .antMatchers("/static/**").permitAll()
+                .requestMatchers(new AntPathRequestMatcher("/static/**", "GET")).permitAll()
                 // 其他所有请求都需要认证 (登录后才能访问)
                 .anyRequest().authenticated();
 
         // 5. 将我们的 JWT 过滤器添加到 UsernamePasswordAuthenticationFilter 之前
         // 这样请求进来会先检查 Token
-        http.addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
+        http.addFilterBefore(jwtAuthenticationTokenFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
     }

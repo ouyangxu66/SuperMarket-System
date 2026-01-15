@@ -3,6 +3,8 @@ package com.supermarket.config;
 import com.supermarket.common.utils.JwtUtils;
 import io.jsonwebtoken.Claims;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -31,6 +33,9 @@ public class JwtAuthenticationTokenFilter extends OncePerRequestFilter {
 
     private final JwtUtils jwtUtils;
     private final UserDetailsService userDetailsService;
+
+    // 添加日志记录器
+    private static final Logger logger = LoggerFactory.getLogger(JwtAuthenticationTokenFilter.class);
 
     public JwtAuthenticationTokenFilter(JwtUtils jwtUtils, UserDetailsService userDetailsService) {
         this.jwtUtils = jwtUtils;
@@ -71,7 +76,7 @@ public class JwtAuthenticationTokenFilter extends OncePerRequestFilter {
                         authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
 
                         // 6. ★★★ 关键一步：将认证对象存入 SecurityContext
-                        // 只要这里存进去了，Spring Security 就认为你是“已登录”状态
+                        // 只要这里存进去了，Spring Security 就认为你是"已登录"状态
                         SecurityContextHolder.getContext().setAuthentication(authentication);
                     }
                 }
