@@ -2,6 +2,7 @@ package com.supermarket.config;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -11,7 +12,7 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
-import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
+
 
 @Configuration
 @EnableWebSecurity
@@ -61,14 +62,14 @@ public class SecurityConfig {
                 .and()
 
                 // 4. 请求权限配置
-                .authorizeHttpRequests()
+                .authorizeRequests() // 使用 authorizeRequests 兼容性更好
                 // 放行登录接口，允许匿名访问
-                .requestMatchers(new AntPathRequestMatcher("/auth/login", "POST")).permitAll()
-                .requestMatchers(new AntPathRequestMatcher("/auth/info", "GET")).authenticated()
-                .requestMatchers(new AntPathRequestMatcher("/auth/logout", "POST")).authenticated()
-                // 放行静态资源 (如果需要)
-                .requestMatchers(new AntPathRequestMatcher("/static/**", "GET")).permitAll()
-                // 其他所有请求都需要认证 (登录后才能访问)
+                .antMatchers("/auth/login", "/auth/register").permitAll()
+                // 放行静态资源
+                .antMatchers("/static/**", "/assets/**", "/index.html", "/favicon.ico").permitAll()
+                // 允许所有的 OPTIONS 请求 (解决 CORS 预检请求问题)
+                .antMatchers(HttpMethod.OPTIONS).permitAll()
+                // 其他所有请求都需要认证
                 .anyRequest().authenticated();
 
         // 5. 将我们的 JWT 过滤器添加到 UsernamePasswordAuthenticationFilter 之前

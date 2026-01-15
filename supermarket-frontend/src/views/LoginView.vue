@@ -33,31 +33,41 @@
 </template>
 
 <script setup>
+/**
+ * 登录页面视图
+ * 处理用户登录逻辑，包含表单验证和 API 调用
+ */
 import { ref, reactive } from 'vue'
 import { useRouter } from 'vue-router'
 import { login } from '@/api/auth'
 import { ElMessage } from 'element-plus'
 
-// 路由实例
+// 路由实例，用于页面跳转
 const router = useRouter()
-// 表单引用
+// 表单引用，用于调用表单验证方法
 const loginFormRef = ref(null)
-// 加载状态
+// 加载状态，用于按钮防抖和 loading 展示
 const loading = ref(false)
 
-// 登录表单数据
+// 登录表单数据模型
 const loginForm = reactive({
   username: '',
   password: ''
 })
 
-// 表单验证规则
+// 表单验证规则配置
 const rules = {
   username: [{ required: true, message: '请输入用户名', trigger: 'blur' }],
   password: [{ required: true, message: '请输入密码', trigger: 'blur' }]
 }
 
-// 处理登录
+/**
+ * 处理登录点击事件
+ * 1. 校验表单
+ * 2. 调用登录 API
+ * 3. 存储 Token
+ * 4. 跳转首页
+ */
 const handleLogin = async () => {
   if (!loginFormRef.value) return
 
@@ -66,13 +76,14 @@ const handleLogin = async () => {
       loading.value = true
       try {
         const res = await login(loginForm)
-        // 存储 Token (实际项目中建议使用 Pinia 管理)
+        // 存储 Token 到本地存储 (实际项目中可结合 Pinia 状态管理)
         localStorage.setItem('token', res.data.token)
         ElMessage.success('登录成功')
-        // 跳转到首页
+        // 登录成功后跳转到首页
         router.push('/')
       } catch (error) {
         console.error(error)
+        // 错误提示已在 request.js 拦截器中统一处理
       } finally {
         loading.value = false
       }
@@ -82,6 +93,7 @@ const handleLogin = async () => {
 </script>
 
 <style scoped>
+/* 样式定义 */
 .login-container {
   display: flex;
   justify-content: center;
@@ -140,4 +152,3 @@ const handleLogin = async () => {
   text-decoration: underline;
 }
 </style>
-

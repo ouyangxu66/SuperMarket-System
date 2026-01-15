@@ -137,28 +137,41 @@
 </template>
 
 <script setup>
+/**
+ * 首页视图 (Layout)
+ * 包含侧边栏菜单、顶部导航栏和主要内容区域
+ * 这里采用了常见的后台管理系统布局
+ */
 import { useRouter } from 'vue-router'
 import { logout } from '@/api/auth'
 import { ElMessage } from 'element-plus'
 
 const router = useRouter()
 
+/**
+ * 处理下拉菜单指令
+ * 目前主要用于处理退出登录
+ * @param {String} command - 下拉菜单项的 command 属性值
+ */
 const handleCommand = async (command) => {
   if (command === 'logout') {
     try {
-      // await logout() // 暂不调用后端接口以免报错，实际需取消注释
+      // 调用后端退出接口（可选，视后端是否需要处理服务端 session/token 无效化）
        await logout()
     } catch(e) {
       console.error(e)
     }
+    // 清除本地存储的 Token
     localStorage.removeItem('token')
     ElMessage.success('已退出登录')
+    // 跳转回登录页
     router.push('/login')
   }
 }
 </script>
 
 <style scoped>
+/* 布局样式 */
 .layout-container {
   height: 100vh;
 }
@@ -224,4 +237,3 @@ const handleCommand = async (command) => {
   color: #333;
 }
 </style>
-

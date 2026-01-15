@@ -39,16 +39,24 @@
 </template>
 
 <script setup>
+/**
+ * 注册页面视图
+ * 目前仅作为 UI 展示，暂无实际注册功能
+ */
 import { ref, reactive } from 'vue'
 import { ElMessage } from 'element-plus'
 
 const registerFormRef = ref(null)
+// 注册表单数据
 const registerForm = reactive({
   username: '',
   password: '',
   confirmPassword: ''
 })
 
+/**
+ * 自定义验证函数：校验两次密码是否一致
+ */
 const validatePass2 = (rule, value, callback) => {
   if (value === '') {
     callback(new Error('请再次输入密码'))
@@ -59,12 +67,14 @@ const validatePass2 = (rule, value, callback) => {
   }
 }
 
+// 表单验证规则
 const rules = {
   username: [{ required: true, message: '请输入用户名', trigger: 'blur' }],
   password: [{ required: true, message: '请输入密码', trigger: 'blur' }],
   confirmPassword: [{ validator: validatePass2, trigger: 'blur' }]
 }
 
+// 处理注册提交
 const handleRegister = () => {
   if (!registerFormRef.value) return
   registerFormRef.value.validate((valid) => {
@@ -76,6 +86,7 @@ const handleRegister = () => {
 </script>
 
 <style scoped>
+/* 注册页面样式 */
 .register-container {
   display: flex;
   justify-content: center;
@@ -134,4 +145,3 @@ const handleRegister = () => {
   text-decoration: underline;
 }
 </style>
-
