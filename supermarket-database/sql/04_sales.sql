@@ -19,6 +19,13 @@ CREATE TABLE `sale_order` (
                               `real_amount` decimal(10,2) NOT NULL COMMENT '实收金额 (优惠后)',
                               `payment_type` tinyint(1) DEFAULT 1 COMMENT '支付方式 (1:现金, 2:微信, 3:支付宝)',
                               `cashier_id` bigint(20) DEFAULT NULL COMMENT '收银员ID (关联 sys_user)',
+                              `member_id` bigint(20) DEFAULT NULL COMMENT '会员ID',
+                              `member_no` varchar(32) DEFAULT NULL COMMENT '会员编号快照',
+                              `member_name` varchar(50) DEFAULT NULL COMMENT '会员姓名快照',
+                              `member_phone` varchar(20) DEFAULT NULL COMMENT '会员手机号快照',
+                              `point_earned` int(11) DEFAULT 0 COMMENT '本单获得积分',
+                              `point_deducted` int(11) DEFAULT 0 COMMENT '本单抵扣积分（预留）',
+                              `point_deduct_amount` decimal(10,2) DEFAULT 0.00 COMMENT '积分抵扣金额（预留）',
 
                               `status` tinyint(1) DEFAULT 1 COMMENT '状态 (1:已支付, -1:已退款)',
                               `remark` varchar(255) DEFAULT NULL COMMENT '备注',
@@ -27,7 +34,8 @@ CREATE TABLE `sale_order` (
                               `update_time` datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
                               `is_deleted` tinyint(1) DEFAULT 0,
                               PRIMARY KEY (`id`),
-                              UNIQUE KEY `uk_order_no` (`order_no`) USING BTREE
+                              UNIQUE KEY `uk_order_no` (`order_no`) USING BTREE,
+                              KEY `idx_sale_member_id` (`member_id`) USING BTREE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='销售主单表';
 
 -- ----------------------------

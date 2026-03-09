@@ -11,6 +11,7 @@ public class SaleFormDTO implements Serializable {
 
     private Integer paymentType; // 支付方式 (1现金 2微信 3支付宝)
     private BigDecimal realPayAmount; // 实付金额 (可能由收银员手动改价)
+    private Long memberId; // 会员ID（可选）
     private String remark;
 
     // 购物车商品列表
@@ -31,6 +32,8 @@ public class SaleFormDTO implements Serializable {
     public void setPaymentType(Integer paymentType) { this.paymentType = paymentType; }
     public BigDecimal getRealPayAmount() { return realPayAmount; }
     public void setRealPayAmount(BigDecimal realPayAmount) { this.realPayAmount = realPayAmount; }
+    public Long getMemberId() { return memberId; }
+    public void setMemberId(Long memberId) { this.memberId = memberId; }
     public String getRemark() { return remark; }
     public void setRemark(String remark) { this.remark = remark; }
     public List<ItemDTO> getItems() { return items; }

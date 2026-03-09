@@ -22,6 +22,13 @@ public class SaleOrder implements Serializable {
     private BigDecimal realAmount;  // 实付金额
     private Integer paymentType;    // 支付方式 (1现金 2微信 3支付宝)
     private Long cashierId;         // 收银员ID
+    private Long memberId;          // 会员ID
+    private String memberNo;        // 会员编号快照
+    private String memberName;      // 会员姓名快照
+    private String memberPhone;     // 会员手机号快照
+    private Integer pointEarned;    // 本单获得积分
+    private Integer pointDeducted;  // 本单抵扣积分（预留）
+    private BigDecimal pointDeductAmount; // 积分抵扣金额（预留）
     private Integer status;         // 1已支付 -1已退款
     private String remark;
 
@@ -55,6 +62,20 @@ public class SaleOrder implements Serializable {
     public void setPaymentType(Integer paymentType) { this.paymentType = paymentType; }
     public Long getCashierId() { return cashierId; }
     public void setCashierId(Long cashierId) { this.cashierId = cashierId; }
+    public Long getMemberId() { return memberId; }
+    public void setMemberId(Long memberId) { this.memberId = memberId; }
+    public String getMemberNo() { return memberNo; }
+    public void setMemberNo(String memberNo) { this.memberNo = memberNo; }
+    public String getMemberName() { return memberName; }
+    public void setMemberName(String memberName) { this.memberName = memberName; }
+    public String getMemberPhone() { return memberPhone; }
+    public void setMemberPhone(String memberPhone) { this.memberPhone = memberPhone; }
+    public Integer getPointEarned() { return pointEarned; }
+    public void setPointEarned(Integer pointEarned) { this.pointEarned = pointEarned; }
+    public Integer getPointDeducted() { return pointDeducted; }
+    public void setPointDeducted(Integer pointDeducted) { this.pointDeducted = pointDeducted; }
+    public BigDecimal getPointDeductAmount() { return pointDeductAmount; }
+    public void setPointDeductAmount(BigDecimal pointDeductAmount) { this.pointDeductAmount = pointDeductAmount; }
     public Integer getStatus() { return status; }
     public void setStatus(Integer status) { this.status = status; }
     public String getRemark() { return remark; }
@@ -69,8 +90,4 @@ public class SaleOrder implements Serializable {
     public void setCashierName(String cashierName) { this.cashierName = cashierName; }
     public List<SaleDetail> getItems() { return items; }
     public void setItems(List<SaleDetail> items) { this.items = items; }
-
-    public void setRealPayAmount(BigDecimal bigDecimal) {
-    }
-
 }
