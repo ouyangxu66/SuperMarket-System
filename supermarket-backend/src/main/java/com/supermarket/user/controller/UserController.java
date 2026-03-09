@@ -8,12 +8,11 @@ import com.supermarket.user.service.UserService;
 import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.Arrays;
 import java.util.List;
 
 /**
- * 用户控制器
- * 提供用户的增删改查接口
+ * 员工控制器
+ * 提供员工账号的增删改查接口
  */
 @RestController
 @RequestMapping("/user")
@@ -27,14 +26,15 @@ public class UserController {
     }
 
     /**
-     * 分页查询用户列表
-     * GET /user/page?pageNum=1&pageSize=10&username=zhang
+     * 分页查询员工列表
+     * GET /user/page?pageNum=1&pageSize=10&username=zhang&keyword=张三
      */
     @GetMapping("/page")
     public Result<Page<User>> getUserPage(
             @RequestParam(defaultValue = "1") Integer pageNum,
             @RequestParam(defaultValue = "10") Integer pageSize,
-            @RequestParam(required = false) String username) {
+            @RequestParam(required = false) String username,
+            @RequestParam(required = false) String keyword) {
 
         // 1. 构建分页对象
         Page<User> page = new Page<>(pageNum, pageSize);
@@ -43,6 +43,12 @@ public class UserController {
         LambdaQueryWrapper<User> wrapper = new LambdaQueryWrapper<>();
         // 如果 username 不为空，则进行模糊查询 (like)
         wrapper.like(StringUtils.hasText(username), User::getUsername, username);
+        wrapper.and(StringUtils.hasText(keyword), w -> w
+                .like(User::getRealName, keyword)
+                .or()
+                .like(User::getEmployeeNo, keyword)
+                .or()
+                .like(User::getNickname, keyword));
         // 按创建时间倒序排列
         wrapper.orderByDesc(User::getCreateTime);
 
@@ -56,7 +62,7 @@ public class UserController {
     }
 
     /**
-     * 新增用户
+     * 新增员工
      * POST /user
      */
     @PostMapping
@@ -67,19 +73,19 @@ public class UserController {
     }
 
     /**
-     * 修改用户
+     * 修改员工
      * PUT /user
      */
     @PutMapping
     public Result<Boolean> update(@RequestBody User user) {
         // 这里不修改密码，密码修改应该走单独的接口
         user.setPassword(null);
-        boolean flag = userService.updateById(user);
+        boolean flag = userService.updateUser(user);
         return flag ? Result.success() : Result.error("修改失败");
     }
 
     /**
-     * 删除用户 (逻辑删除)
+     * 删除员工 (逻辑删除)
      * DELETE /user/1
      */
     @DeleteMapping("/{id}")
@@ -89,7 +95,7 @@ public class UserController {
     }
 
     /**
-     * 批量删除
+     * 批量删除员工
      * DELETE /user/batch
      * Body: [1, 2, 3]
      */
@@ -100,14 +106,14 @@ public class UserController {
     }
 
     /**
-     * 根据ID获���用户详情
+     * 根据ID获取员工详情
      * GET /user/1
      */
     @GetMapping("/{id}")
     public Result<User> getById(@PathVariable Long id) {
         User user = userService.getById(id);
         if (user != null) {
-            user.setPassword(null); // 脱敏
+            user.setPassword(null);
         }
         return Result.success(user);
     }

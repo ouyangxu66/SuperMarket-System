@@ -74,4 +74,51 @@ CREATE TABLE `stock_in_detail` (
                                    KEY `idx_order_id` (`order_id`) USING BTREE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='入库单明细表';
 
+-- ----------------------------
+-- 4. 库存盘点表 (inventory_count)
+-- ----------------------------
+DROP TABLE IF EXISTS `inventory_count`;
+CREATE TABLE `inventory_count` (
+    `id` bigint(20) NOT NULL AUTO_INCREMENT,
+    `count_number` varchar(50) NOT NULL COMMENT '盘点编号',
+    `title` varchar(100) DEFAULT NULL COMMENT '盘点标题',
+    `description` varchar(500) DEFAULT NULL COMMENT '盘点说明',
+    `total_count` int(11) DEFAULT 0 COMMENT '盘点商品种类总数',
+    `discrepancy_count` int(11) DEFAULT 0 COMMENT '盘点差异商品种类数',
+    `status` varchar(20) DEFAULT 'DRAFT' COMMENT '状态 (DRAFT, IN_PROGRESS, COMPLETED, CANCELLED)',
+    `start_time` datetime DEFAULT NULL COMMENT '开始时间',
+    `end_time` datetime DEFAULT NULL COMMENT '结束时间',
+    `operator_id` bigint(20) DEFAULT NULL COMMENT '操作员ID',
+    `operator_name` varchar(50) DEFAULT NULL COMMENT '操作员姓名',
+    `remark` varchar(500) DEFAULT NULL COMMENT '备注',
+    `create_time` datetime DEFAULT CURRENT_TIMESTAMP,
+    `update_time` datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    `is_deleted` tinyint(1) DEFAULT 0 COMMENT '逻辑删除',
+    PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='库存盘点表';
+
+-- ----------------------------
+-- 5. 库存盘点明细表 (inventory_count_detail)
+-- ----------------------------
+DROP TABLE IF EXISTS `inventory_count_detail`;
+CREATE TABLE `inventory_count_detail` (
+    `id` bigint(20) NOT NULL AUTO_INCREMENT,
+    `count_id` bigint(20) NOT NULL COMMENT '盘点ID',
+    `product_id` bigint(20) NOT NULL COMMENT '商品ID',
+    `product_name` varchar(100) DEFAULT NULL COMMENT '商品名称',
+    `product_barcode` varchar(50) DEFAULT NULL COMMENT '商品条码',
+    `product_spec` varchar(50) DEFAULT NULL COMMENT '商品规格',
+    `product_unit` varchar(20) DEFAULT NULL COMMENT '商品单位',
+    `system_stock` int(11) DEFAULT 0 COMMENT '系统库存数量',
+    `actual_stock` int(11) DEFAULT 0 COMMENT '实际盘点数量',
+    `difference` int(11) DEFAULT 0 COMMENT '差异数量（实际 - 系统）',
+    `discrepancy_reason` varchar(200) DEFAULT NULL COMMENT '差异原因',
+    `status` varchar(20) DEFAULT 'NORMAL' COMMENT '状态 (NORMAL, DISCREPANCY)',
+    `remark` varchar(500) DEFAULT NULL COMMENT '备注',
+    `create_time` datetime DEFAULT CURRENT_TIMESTAMP,
+    `update_time` datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    `is_deleted` tinyint(1) DEFAULT 0 COMMENT '逻辑删除',
+    PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='库存盘点明细表';
+
 SET FOREIGN_KEY_CHECKS = 1;

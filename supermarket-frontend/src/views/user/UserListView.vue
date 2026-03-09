@@ -3,8 +3,11 @@
     <!-- 搜索栏 -->
     <el-card class="search-card">
       <el-form :inline="true" :model="queryParams" class="search-form">
-        <el-form-item label="用户名">
-          <el-input v-model="queryParams.username" placeholder="请输入用户名" clearable @keyup.enter="handleQuery" />
+        <el-form-item label="登录账号">
+          <el-input v-model="queryParams.username" placeholder="请输入登录账号" clearable @keyup.enter="handleQuery" />
+        </el-form-item>
+        <el-form-item label="姓名/工号">
+          <el-input v-model="queryParams.keyword" placeholder="请输入员工姓名或工号" clearable @keyup.enter="handleQuery" />
         </el-form-item>
         <el-form-item>
           <el-button type="primary" icon="Search" @click="handleQuery">搜索</el-button>
@@ -16,7 +19,7 @@
     <!-- 操作栏与表格 -->
     <el-card class="table-card">
       <div class="table-operations">
-        <el-button type="primary" icon="Plus" @click="handleAdd">新增用户</el-button>
+        <el-button type="primary" icon="Plus" @click="handleAdd">新增员工</el-button>
         <el-button type="danger" icon="Delete" :disabled="selection.length === 0" @click="handleBatchDelete">批量删除</el-button>
       </div>
 
@@ -29,14 +32,32 @@
       >
         <el-table-column type="selection" width="55" align="center" />
         <el-table-column prop="id" label="ID" width="80" align="center" />
-        <el-table-column prop="username" label="用户名" min-width="120" />
-        <el-table-column prop="nickname" label="昵称" min-width="120" />
+        <el-table-column prop="employeeNo" label="工号" min-width="120" />
+        <el-table-column prop="realName" label="员工姓名" min-width="120">
+          <template #default="scope">
+            {{ scope.row.realName || scope.row.nickname || '-' }}
+          </template>
+        </el-table-column>
+        <el-table-column prop="username" label="登录账号" min-width="120" />
+        <el-table-column prop="jobTitle" label="岗位" min-width="120" />
         <el-table-column prop="phone" label="手机号" width="120" />
         <el-table-column prop="gender" label="性别" width="80" align="center">
           <template #default="scope">
             <el-tag v-if="scope.row.gender === 1" type="primary">男</el-tag>
             <el-tag v-else-if="scope.row.gender === 0" type="danger">女</el-tag>
             <el-tag v-else type="info">未知</el-tag>
+          </template>
+        </el-table-column>
+        <el-table-column prop="hireDate" label="入职时间" width="180" align="center">
+          <template #default="scope">
+            {{ formatDateTime(scope.row.hireDate) }}
+          </template>
+        </el-table-column>
+        <el-table-column label="角色" min-width="150" align="center">
+          <template #default="scope">
+            <el-tag v-for="role in scope.row.roles" :key="role.id" size="small" style="margin-right: 5px">
+              {{ role.roleName }}
+            </el-tag>
           </template>
         </el-table-column>
         <el-table-column prop="status" label="状态" width="100" align="center">
@@ -82,17 +103,27 @@
     <el-dialog
       :title="dialog.title"
       v-model="dialog.visible"
-      width="500px"
+      width="560px"
       @close="resetForm"
     >
-      <el-form :model="form" :rules="rules" ref="formRef" label-width="80px">
-        <el-form-item label="用户名" prop="username">
-          <el-input v-model="form.username" placeholder="请输入用户名" :disabled="dialog.type === 'edit'" />
+      <el-form :model="form" :rules="rules" ref="formRef" label-width="92px">
+        <el-form-item label="登录账号" prop="username">
+          <el-input v-model="form.username" placeholder="请输入登录账号" :disabled="dialog.type === 'edit'" />
         </el-form-item>
-        <el-form-item label="昵称" prop="nickname">
-          <el-input v-model="form.nickname" placeholder="请输入昵称" />
+        <el-form-item label="员工姓名" prop="realName">
+          <el-input v-model="form.realName" placeholder="请输入员工姓名" />
         </el-form-item>
-         <el-form-item label="手机号" prop="phone">
+        <el-form-item label="员工工号" prop="employeeNo">
+          <el-input v-model="form.employeeNo" placeholder="请输入员工工号">
+            <template #append>
+              <el-button @click="generateEmployeeNo">重新生成</el-button>
+            </template>
+          </el-input>
+        </el-form-item>
+        <el-form-item label="岗位" prop="jobTitle">
+          <el-input v-model="form.jobTitle" placeholder="请输入岗位" />
+        </el-form-item>
+        <el-form-item label="手机号" prop="phone">
           <el-input v-model="form.phone" placeholder="请输入手机号" />
         </el-form-item>
         <el-form-item label="密码" prop="password" v-if="dialog.type === 'add'">
@@ -104,11 +135,33 @@
             <el-radio :label="0">女</el-radio>
           </el-radio-group>
         </el-form-item>
+        <el-form-item label="入职时间" prop="hireDate">
+          <el-date-picker
+            v-model="form.hireDate"
+            type="datetime"
+            value-format="YYYY-MM-DD HH:mm:ss"
+            placeholder="请选择入职时间"
+            style="width: 100%"
+          />
+        </el-form-item>
         <el-form-item label="状态" prop="status">
           <el-radio-group v-model="form.status">
             <el-radio :label="1">启用</el-radio>
             <el-radio :label="0">禁用</el-radio>
           </el-radio-group>
+        </el-form-item>
+        <el-form-item label="角色" prop="roleIds">
+          <el-select v-model="form.roleIds" multiple placeholder="请选择角色" style="width: 100%">
+            <el-option
+              v-for="role in roleOptions"
+              :key="role.id"
+              :label="role.roleName"
+              :value="role.id"
+            />
+          </el-select>
+        </el-form-item>
+        <el-form-item label="备注" prop="remark">
+          <el-input v-model="form.remark" type="textarea" :rows="3" placeholder="请输入备注" />
         </el-form-item>
       </el-form>
       <template #footer>
@@ -123,84 +176,109 @@
 
 <script setup>
 /**
- * 用户列表页面
- * 包含搜索、表格展示、分页、新增/编辑/删除用户等功能
+ * 员工列表页面
+ * 包含搜索、表格展示、分页、新增/编辑/删除员工等功能
  */
-import { ref, reactive, onMounted } from 'vue'
-import { ElMessage, ElMessageBox } from 'element-plus'
+import { ref, reactive, onMounted, nextTick } from 'vue'
 import { getUserPage, addUser, updateUser, deleteUser, deleteUserBatch } from '@/api/user'
+import { getRoleList } from '@/api/role'
+import { ElMessage, ElMessageBox } from 'element-plus'
 
-/**
- * 状态定义
- * 使用 ref 定义基本类型响应式数据，reactive 定义对象类型响应式数据
- */
-const loading = ref(false) // 表格加载状态
-const selection = ref([]) // 表格选中行数据
-const total = ref(0) // 总条数
-const userList = ref([]) // 用户列表数据
+const loading = ref(false)
+const selection = ref([])
+const total = ref(0)
+const userList = ref([])
+const roleOptions = ref([])
 
-// 查询参数
 const queryParams = reactive({
   pageNum: 1,
   pageSize: 10,
-  username: ''
+  username: '',
+  keyword: ''
 })
 
-// 对话框配置
 const dialog = reactive({
   visible: false,
   title: '',
-  type: 'add' // 'add' or 'edit'
+  type: 'add'
 })
 
-// 表单数据
-const form = reactive({
-  id: null,
+const form = ref({
+  id: undefined,
   username: '',
   nickname: '',
+  realName: '',
+  employeeNo: '',
+  jobTitle: '',
   phone: '',
   password: '',
-  gender: 1, // 默认男
-  status: 1  // 默认启用
+  gender: 1,
+  status: 1,
+  hireDate: '',
+  remark: '',
+  roleIds: []
 })
 
-// 表单引用
 const formRef = ref(null)
 
-// 表单校验规则
 const rules = {
   username: [
-    { required: true, message: '请输入用户名', trigger: 'blur' },
+    { required: true, message: '请输入登录账号', trigger: 'blur' },
     { min: 3, max: 20, message: '长度在 3 到 20 个字符', trigger: 'blur' }
   ],
-  nickname: [
-    { required: true, message: '请输入昵称', trigger: 'blur' }
+  realName: [
+    { required: true, message: '请输入员工姓名', trigger: 'blur' },
+    { max: 20, message: '员工姓名长度不能超过 20 个字符', trigger: 'blur' }
+  ],
+  employeeNo: [
+    { required: true, message: '请输入员工工号', trigger: 'blur' },
+    { min: 2, max: 32, message: '员工工号长度需在 2 到 32 个字符之间', trigger: 'blur' },
+    { pattern: /^[A-Za-z0-9_-]+$/, message: '员工工号仅支持字母、数字、下划线和中划线', trigger: 'blur' }
+  ],
+  jobTitle: [
+    { max: 20, message: '岗位长度不能超过 20 个字符', trigger: 'blur' }
+  ],
+  phone: [
+    { pattern: /^$|^1\d{10}$/, message: '请输入正确的手机号', trigger: 'blur' }
+  ],
+  password: [
+    { min: 6, max: 20, message: '密码长度需在 6 到 20 个字符之间', trigger: 'blur' }
+  ],
+  roleIds: [
+    { type: 'array', required: true, message: '请至少选择一个角色', trigger: 'change' }
+  ],
+  remark: [
+    { max: 200, message: '备注长度不能超过 200 个字符', trigger: 'blur' }
   ]
 }
 
-/**
- * 生命周期
- */
-onMounted(() => {
-  getList()
-})
-
-/**
- * 方法定义
- */
-
-// 格式化时间
-const formatDateTime = (timeStr) => {
-  if (!timeStr) return ''
-  return timeStr.replace('T', ' ')
+const fetchRoleList = async () => {
+  try {
+    const res = await getRoleList()
+    roleOptions.value = res.data
+  } catch (error) {
+    console.error('获取角色列表失败', error)
+  }
 }
 
-// 获取用户列表
-const getList = async () => {
+onMounted(() => {
+  fetchUserList()
+  fetchRoleList()
+})
+
+const formatDateTime = (timeStr) => {
+  if (!timeStr) return ''
+  return String(timeStr).replace('T', ' ')
+}
+
+const fetchUserList = async () => {
   loading.value = true
   try {
     const res = await getUserPage(queryParams)
-    userList.value = res.data.records
+    userList.value = (res.data.records || []).map(item => ({
+      ...item,
+      realName: item.realName || item.nickname || ''
+    }))
     total.value = res.data.total
   } catch (error) {
     console.error(error)
@@ -209,59 +287,58 @@ const getList = async () => {
   }
 }
 
-// 搜索
 const handleQuery = () => {
   queryParams.pageNum = 1
-  getList()
+  fetchUserList()
 }
 
-// 重置
 const resetQuery = () => {
   queryParams.username = ''
+  queryParams.keyword = ''
   queryParams.pageNum = 1
-  getList()
+  fetchUserList()
 }
 
-// 选中项变化
 const handleSelectionChange = (val) => {
   selection.value = val
 }
 
-// 分页大小改变
 const handleSizeChange = (val) => {
   queryParams.pageSize = val
-  getList()
+  fetchUserList()
 }
 
-// 页码改变
 const handleCurrentChange = (val) => {
   queryParams.pageNum = val
-  getList()
+  fetchUserList()
 }
 
-// 新增按钮点击
 const handleAdd = () => {
-  dialog.title = '新增用户'
+  resetForm()
   dialog.type = 'add'
+  dialog.title = '新增员工'
   dialog.visible = true
-  resetFormState()
+  generateEmployeeNo()
 }
 
-// 编辑按钮点击
 const handleEdit = (row) => {
-  dialog.title = '编辑用户'
+  resetForm()
   dialog.type = 'edit'
+  dialog.title = '编辑员工'
   dialog.visible = true
-  // 回显数据 (注意深拷贝或逐个赋值)
-  Object.assign(form, row)
-  // 清空密码，编辑时不展示原密码也不默认修改
-  form.password = ''
+  nextTick(() => {
+    Object.assign(form.value, {
+      ...row,
+      realName: row.realName || row.nickname || '',
+      roleIds: row.roleIds || [],
+      hireDate: row.hireDate ? formatDateTime(row.hireDate) : ''
+    })
+  })
 }
 
-// 删除按钮点击
 const handleDelete = (row) => {
   ElMessageBox.confirm(
-    `确认删除用户 "${row.username}" 吗？`,
+    `确认删除员工 "${row.realName || row.nickname || row.username}" 吗？`,
     '警告',
     {
       confirmButtonText: '确定',
@@ -272,19 +349,18 @@ const handleDelete = (row) => {
   .then(async () => {
     await deleteUser(row.id)
     ElMessage.success('删除成功')
-    getList()
+    fetchUserList()
   })
   .catch(() => {})
 }
 
-// 批量删除
 const handleBatchDelete = () => {
   if (selection.value.length === 0) return
 
   const ids = selection.value.map(item => item.id)
 
   ElMessageBox.confirm(
-    `确认批量删除 ${ids.length} 个用户吗？`,
+    `确认批量删除 ${ids.length} 名员工吗？`,
     '警告',
     {
       confirmButtonText: '确定',
@@ -295,66 +371,81 @@ const handleBatchDelete = () => {
   .then(async () => {
     await deleteUserBatch(ids)
     ElMessage.success('批量删除成功')
-    getList()
+    fetchUserList()
   })
   .catch(() => {})
 }
 
-// 提交表单
 const submitForm = async () => {
   if (!formRef.value) return
 
   await formRef.value.validate(async (valid) => {
     if (valid) {
       try {
+        const payload = {
+          ...form.value,
+          username: form.value.username.trim(),
+          realName: form.value.realName.trim(),
+          employeeNo: form.value.employeeNo.trim(),
+          jobTitle: form.value.jobTitle?.trim() || '',
+          remark: form.value.remark?.trim() || '',
+          nickname: form.value.realName.trim(),
+        }
         if (dialog.type === 'add') {
-          await addUser(form)
+          await addUser(payload)
           ElMessage.success('新增成功')
         } else {
-          await updateUser(form)
+          await updateUser(payload)
           ElMessage.success('修改成功')
         }
         dialog.visible = false
-        getList()
+        fetchUserList()
       } catch (error) {
         console.error(error)
+        ElMessage.error(error?.response?.data?.message || '保存失败，请检查输入信息后重试')
       }
     }
   })
 }
 
-// 仅用于状态开关展示，实际修改状态可以单独加个 API，也可以走 update 接口
 const handleStatusChange = (row) => {
-  // 当前后端接口未单独提供状态修改，且 update 接口比较重，这里暂不自动保存
-  // 若需要，可调用 updateUser(row)
-  // 但要注意数据回显和异常处理
   console.log('Status changed:', row.id, row.status)
 }
 
-// 重置表单状态
-const resetFormState = () => {
-  form.id = null
-  form.username = ''
-  form.nickname = ''
-  form.phone = ''
-  form.password = ''
-  form.gender = 1
-  form.status = 1
+const resetForm = () => {
+  if (formRef.value) formRef.value.resetFields()
+  form.value = {
+    id: undefined,
+    username: '',
+    nickname: '',
+    realName: '',
+    employeeNo: '',
+    jobTitle: '',
+    phone: '',
+    password: '',
+    gender: 1,
+    status: 1,
+    hireDate: '',
+    remark: '',
+    roleIds: []
+  }
 }
 
-// Dialog 关闭回调：重置校验结果
-const resetForm = () => {
+const buildEmployeeNo = () => {
+  const now = new Date()
+  const pad = (value) => String(value).padStart(2, '0')
+  return `EMP${now.getFullYear()}${pad(now.getMonth() + 1)}${pad(now.getDate())}${pad(now.getHours())}${pad(now.getMinutes())}${pad(now.getSeconds())}`
+}
+
+const generateEmployeeNo = () => {
+  form.value.employeeNo = buildEmployeeNo()
   if (formRef.value) {
-    formRef.value.resetFields()
+    formRef.value.validateField('employeeNo', () => {})
   }
 }
 </script>
 
 <style scoped>
-.user-list-container {
-  /* padding: 20px; */
-}
-
 .search-card {
   margin-bottom: 20px;
 }

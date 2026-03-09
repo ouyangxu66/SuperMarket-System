@@ -24,6 +24,9 @@
 登录成功后，后端会返回 `token`。后续请求需要在 Header 中携带：
 `Authorization: Bearer <your_token_here>`
 
+### 1.5 员工管理语义说明
+当前系统已将“用户管理”业务语义升级为“员工管理”。为保持 Spring Security、JWT 与角色权限链路稳定，底层表结构、实体命名及部分接口路径仍沿用 `sys_user` / `/user` 命名。
+
 ---
 
 ## 2. 接口列表 (持续更新)
@@ -111,16 +114,18 @@
 }
 ```
 
-### 2.2 用户管理模块 (User)
+### 2.2 员工管理模块 (Employee)
 
-#### 分页查询用户列表
+> 说明：当前后端仍沿用 `/user` 路径，以兼容现有认证与权限链路。
+
+#### 分页查询员工列表
 | 接口描述 | URL | 请求方式 | 参数 | 响应 |
 | :--- | :--- | :--- | :--- | :--- |
-| 分页查询用户列表 | `/user/page` | GET | `pageNum=1&pageSize=10&username=` | 见下方示例 |
+| 分页查询员工列表 | `/user/page` | GET | `pageNum=1&pageSize=10&username=&keyword=` | 见下方示例 |
 
 **请求示例：**
 ```
-GET /user/page?pageNum=1&pageSize=10&username=admin
+GET /user/page?pageNum=1&pageSize=10&username=admin&keyword=EMP0001
 ```
 
 **响应示例：**
@@ -134,9 +139,14 @@ GET /user/page?pageNum=1&pageSize=10&username=admin
         "id": 1,
         "username": "admin",
         "nickname": "超级管理员",
+        "realName": "系统管理员",
+        "employeeNo": "EMP0001",
+        "jobTitle": "管理员",
+        "hireDate": "2026-01-09T10:30:00",
         "phone": null,
         "gender": 1,
         "status": 1,
+        "remark": "初始管理员账号",
         "createTime": "2026-01-09T10:30:00",
         "updateTime": "2026-01-09T10:30:00"
       }
@@ -149,19 +159,25 @@ GET /user/page?pageNum=1&pageSize=10&username=admin
 }
 ```
 
-#### 新增用户
+#### 新增员工
 | 接口描述 | URL | 请求方式 | 请求头 | 参数 | 响应 |
 | :--- | :--- | :--- | :--- | :--- | :--- |
-| 新增用户 | `/user` | POST | `Authorization: Bearer <token>` | 见下方示例 | 见下方示例 |
+| 新增员工 | `/user` | POST | `Authorization: Bearer <token>` | 见下方示例 | 见下方示例 |
 
 **请求示例：**
 ```json
 {
-  "username": "testuser",
-  "nickname": "测试用户",
+  "username": "cashier01",
+  "realName": "张三",
+  "nickname": "张三",
+  "employeeNo": "EMP0002",
+  "jobTitle": "收银员",
+  "hireDate": "2026-03-01 09:00:00",
   "phone": "13800138000",
   "gender": 1,
-  "status": 1
+  "status": 1,
+  "remark": "门店收银岗",
+  "roleIds": [3]
 }
 ```
 
@@ -174,20 +190,26 @@ GET /user/page?pageNum=1&pageSize=10&username=admin
 }
 ```
 
-#### 修改用户
+#### 修改员工
 | 接口描述 | URL | 请求方式 | 请求头 | 参数 | 响应 |
 | :--- | :--- | :--- | :--- | :--- | :--- |
-| 修改用户 | `/user` | PUT | `Authorization: Bearer <token>` | 见下方示例 | 见下方示例 |
+| 修改员工 | `/user` | PUT | `Authorization: Bearer <token>` | 见下方示例 | 见下方示例 |
 
 **请求示例：**
 ```json
 {
   "id": 1,
   "username": "admin",
-  "nickname": "管理员",
+  "realName": "系统管理员",
+  "nickname": "系统管理员",
+  "employeeNo": "EMP0001",
+  "jobTitle": "管理员",
+  "hireDate": "2026-01-09 10:30:00",
   "phone": "13800138000",
   "gender": 1,
-  "status": 1
+  "status": 1,
+  "remark": "系统维护负责人",
+  "roleIds": [1]
 }
 ```
 
@@ -200,10 +222,10 @@ GET /user/page?pageNum=1&pageSize=10&username=admin
 }
 ```
 
-#### 删除用户
+#### 删除员工
 | 接口描述 | URL | 请求方式 | 请求头 | 参数 | 响应 |
 | :--- | :--- | :--- | :--- | :--- | :--- |
-| 删除用户 | `/user/{id}` | DELETE | `Authorization: Bearer <token>` | `id` (路径参数) | 见下方示例 |
+| 删除员工 | `/user/{id}` | DELETE | `Authorization: Bearer <token>` | `id` (路径参数) | 见下方示例 |
 
 **请求示例：**
 ```
@@ -219,10 +241,10 @@ DELETE /user/1
 }
 ```
 
-#### 批量删除用户
+#### 批量删除员工
 | 接口描述 | URL | 请求方式 | 请求头 | 参数 | 响应 |
 | :--- | :--- | :--- | :--- | :--- | :--- |
-| 批量删除用户 | `/user/batch` | DELETE | `Authorization: Bearer <token>` | `[1, 2, 3]` (请求体) | 见下方示例 |
+| 批量删除员工 | `/user/batch` | DELETE | `Authorization: Bearer <token>` | `[1, 2, 3]` (请求体) | 见下方示例 |
 
 **请求示例：**
 ```json
@@ -238,10 +260,10 @@ DELETE /user/1
 }
 ```
 
-#### 根据ID获取用户详情
+#### 根据ID获取员工详情
 | 接口描述 | URL | 请求方式 | 请求头 | 参数 | 响应 |
 | :--- | :--- | :--- | :--- | :--- | :--- |
-| 根据ID获取用户详情 | `/user/{id}` | GET | `Authorization: Bearer <token>` | `id` (路径参数) | 见下方示例 |
+| 根据ID获取员工详情 | `/user/{id}` | GET | `Authorization: Bearer <token>` | `id` (路径参数) | 见下方示例 |
 
 **响应示例：**
 ```json
@@ -252,9 +274,14 @@ DELETE /user/1
     "id": 1,
     "username": "admin",
     "nickname": "超级管理员",
+    "realName": "系统管理员",
+    "employeeNo": "EMP0001",
+    "jobTitle": "管理员",
+    "hireDate": "2026-01-09T10:30:00",
     "phone": null,
     "gender": 1,
     "status": 1,
+    "remark": "初始管理员账号",
     "createTime": "2026-01-09T10:30:00",
     "updateTime": "2026-01-09T10:30:00"
   }
@@ -725,16 +752,18 @@ GET /inventory/detail/1
 }
 ```
 
-### 2.6 库存盘点模块 (Inventory Count)
+### 2.6 会员管理模块 (Member)
 
-#### 分页查询盘点列表
-| 接口描述 | URL | 请求方式 | 请求头 | 参数 | 响应 |
-| :--- | :--- | :--- | :--- | :--- | :--- |
-| 分页查询盘点列表 | `/inventory/count/page` | GET | `Authorization: Bearer <token>` | `pageNum=1&pageSize=10&title=盘点任务&status=DRAFT` | 见下方示例 |
+> 说明：会员模块为独立业务域，采用 `/member` 路径；统一返回 `Result<T>`，分页结果沿用 MyBatis-Plus `Page` 结构。
+
+#### 分页查询会员列表
+| 接口描述 | URL | 请求方式 | 参数 | 响应 |
+| :--- | :--- | :--- | :--- | :--- |
+| 分页查询会员列表 | `/member/page` | GET | `pageNum=1&pageSize=10&keyword=&status=&phone=&memberNo=&cardNo=` | 见下方示例 |
 
 **请求示例：**
 ```
-GET /inventory/count/page?pageNum=1&pageSize=10&title=盘点任务&status=DRAFT
+GET /member/page?pageNum=1&pageSize=10&keyword=13800138000&status=1
 ```
 
 **响应示例：**
@@ -746,18 +775,26 @@ GET /inventory/count/page?pageNum=1&pageSize=10&title=盘点任务&status=DRAFT
     "records": [
       {
         "id": 1,
-        "countNumber": "PC202601130001",
-        "title": "第一季度盘点",
-        "description": "第一季度商品库存盘点",
-        "totalCount": 100,
-        "discrepancyCount": 5,
-        "status": "IN_PROGRESS",
-        "startTime": "2026-01-13T10:00:00",
-        "endTime": null,
-        "operatorId": 1,
-        "operatorName": "管理员",
-        "createTime": "2026-01-13T09:00:00",
-        "updateTime": "2026-01-13T10:00:00"
+        "memberNo": "M202603080001",
+        "cardNo": "VIP202603080001",
+        "name": "王小芳",
+        "nickname": "小芳",
+        "phone": "13800138000",
+        "gender": 0,
+        "birthday": "1995-06-18",
+        "status": 1,
+        "remark": "门店注册会员",
+        "balance": 300.00,
+        "points": 120,
+        "totalRechargeAmount": 500.00,
+        "totalConsumeAmount": 280.00,
+        "totalConsumeCount": 3,
+        "lastConsumeTime": "2026-03-08T15:20:00",
+        "registerTime": "2026-03-08T10:30:00",
+        "registerChannel": "OFFLINE",
+        "levelId": 1,
+        "createTime": "2026-03-08T10:30:00",
+        "updateTime": "2026-03-08T15:20:00"
       }
     ],
     "total": 1,
@@ -768,19 +805,51 @@ GET /inventory/count/page?pageNum=1&pageSize=10&title=盘点任务&status=DRAFT
 }
 ```
 
-#### 创建盘点任务
+#### 根据 ID 获取会员详情
+| 接口描述 | URL | 请求方式 | 参数 | 响应 |
+| :--- | :--- | :--- | :--- | :--- |
+| 获取会员详情 | `/member/{id}` | GET | `id` (路径参数) | 见下方示例 |
+
+**响应示例：**
+```json
+{
+  "code": 200,
+  "message": "操作成功",
+  "data": {
+    "id": 1,
+    "memberNo": "M202603080001",
+    "cardNo": "VIP202603080001",
+    "name": "王小芳",
+    "nickname": "小芳",
+    "phone": "13800138000",
+    "gender": 0,
+    "birthday": "1995-06-18",
+    "status": 1,
+    "remark": "门店注册会员",
+    "balance": 300.00,
+    "points": 120,
+    "registerTime": "2026-03-08T10:30:00"
+  }
+}
+```
+
+#### 新增会员
 | 接口描述 | URL | 请求方式 | 请求头 | 参数 | 响应 |
 | :--- | :--- | :--- | :--- | :--- | :--- |
-| 创建盘点任务 | `/inventory/count` | POST | `Authorization: Bearer <token>` | 见下方示例 | 见下方示例 |
+| 新增会员 | `/member` | POST | `Authorization: Bearer <token>` | 见下方示例 | 见下方示例 |
 
 **请求示例：**
 ```json
 {
-  "title": "第一季度盘点",
-  "description": "第一季度商品库存盘点",
-  "operatorId": 1,
-  "operatorName": "管理员",
-  "remark": "重要盘点任务"
+  "cardNo": "VIP202603080001",
+  "name": "王小芳",
+  "nickname": "小芳",
+  "phone": "13800138000",
+  "gender": 0,
+  "birthday": "1995-06-18",
+  "status": 1,
+  "remark": "门店注册会员",
+  "registerChannel": "OFFLINE"
 }
 ```
 
@@ -789,113 +858,359 @@ GET /inventory/count/page?pageNum=1&pageSize=10&title=盘点任务&status=DRAFT
 {
   "code": 200,
   "message": "操作成功",
-  "data": 1
+  "data": true
 }
 ```
 
-#### 开始盘点
+#### 修改会员
 | 接口描述 | URL | 请求方式 | 请求头 | 参数 | 响应 |
 | :--- | :--- | :--- | :--- | :--- | :--- |
-| 开始盘点 | `/inventory/count/{id}/start` | PUT | `Authorization: Bearer <token>` | `id` (路径参数) | 见下方示例 |
+| 修改会员 | `/member` | PUT | `Authorization: Bearer <token>` | 见下方示例 | 见下方示例 |
 
 **请求示例：**
-```
-PUT /inventory/count/1/start
-```
-
-**响应示例：**
 ```json
 {
-  "code": 200,
-  "message": "开始盘点成功",
-  "data": null
+  "id": 1,
+  "cardNo": "VIP202603080001",
+  "name": "王小芳",
+  "nickname": "芳芳",
+  "phone": "13800138000",
+  "gender": 0,
+  "birthday": "1995-06-18",
+  "status": 1,
+  "remark": "老顾客，偏好饮品类商品"
 }
 ```
 
-#### 完成盘点
+#### 删除会员（逻辑删除）
 | 接口描述 | URL | 请求方式 | 请求头 | 参数 | 响应 |
 | :--- | :--- | :--- | :--- | :--- | :--- |
-| 完成盘点 | `/inventory/count/{id}/complete` | PUT | `Authorization: Bearer <token>` | `id` (路径参数) | 见下方示例 |
+| 删除会员 | `/member/{id}` | DELETE | `Authorization: Bearer <token>` | `id` (路径参数) | 见下方示例 |
 
-**请求示例：**
-```
-PUT /inventory/count/1/complete
-```
-
-**响应示例：**
-```json
-{
-  "code": 200,
-  "message": "完成盘点成功",
-  "data": null
-}
-```
-
-#### 获取盘点详情列表
-| 接口描述 | URL | 请求方式 | 请求头 | 参数 | 响应 |
-| :--- | :--- | :--- | :--- | :--- | :--- |
-| 获取盘点详情列表 | `/inventory/count/{id}/details` | GET | `Authorization: Bearer <token>` | `id` (路径参数) | 见下方示例 |
-
-**请求示例：**
-```
-GET /inventory/count/1/details
-```
+**说明：**
+- 仅执行逻辑删除，不做物理删除。
+- 删除前需校验该会员是否存在历史消费记录；如存在，应返回错误并提示改为停用会员。
 
 **响应示例：**
 ```json
 {
   "code": 200,
   "message": "操作成功",
-  "data": [
+  "data": true
+}
+```
+
+#### 批量删除会员
+| 接口描述 | URL | 请求方式 | 请求头 | 参数 | 响应 |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| 批量删除会员 | `/member/batch` | DELETE | `Authorization: Bearer <token>` | `[1, 2, 3]` (请求体) | 见下方示例 |
+
+#### 会员快速查询（供收银台绑定会员使用）
+| 接口描述 | URL | 请求方式 | 参数 | 响应 |
+| :--- | :--- | :--- | :--- | :--- |
+| 按手机号/卡号/会员编号查询会员简要信息 | `/member/simple` | GET | `phone=&cardNo=&memberNo=` | 见下方示例 |
+
+**响应示例：**
+```json
+{
+  "code": 200,
+  "message": "操作成功",
+  "data": {
+    "id": 1,
+    "memberNo": "M202603080001",
+    "cardNo": "VIP202603080001",
+    "name": "王小芳",
+    "phone": "13800138000",
+    "balance": 300.00,
+    "points": 120,
+    "status": 1,
+    "levelName": "普通会员"
+  }
+}
+```
+
+#### 会员充值
+| 接口描述 | URL | 请求方式 | 请求头 | 参数 | 响应 |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| 会员储值充值 | `/member/balance/recharge` | POST | `Authorization: Bearer <token>` | 见下方示例 | 见下方示例 |
+
+**请求示例：**
+```json
+{
+  "memberId": 1,
+  "amount": 200.00,
+  "source": "门店现金充值",
+  "remark": "开卡首次充值"
+}
+```
+
+**说明：**
+- `amount` 必须大于 0。
+- 充值成功后需同步更新会员主表余额与累计充值金额，并写入余额流水。
+
+#### 会员余额调整
+| 接口描述 | URL | 请求方式 | 请求头 | 参数 | 响应 |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| 会员余额人工调整 | `/member/balance/adjust` | POST | `Authorization: Bearer <token>` | 见下方示例 | 见下方示例 |
+
+**请求示例：**
+```json
+{
+  "memberId": 1,
+  "changeAmount": -50.00,
+  "source": "人工修正",
+  "remark": "误充值冲正"
+}
+```
+
+**说明：**
+- 调整后余额不得小于 0。
+- 所有调整必须写入余额流水并保留来源说明。
+
+#### 分页查询余额流水
+| 接口描述 | URL | 请求方式 | 参数 | 响应 |
+| :--- | :--- | :--- | :--- | :--- |
+| 分页查询会员余额流水 | `/member/balance/flow/page` | GET | `pageNum=1&pageSize=10&memberId=1&bizType=RECHARGE` | 见下方示例 |
+
+**响应示例：**
+```json
+{
+  "code": 200,
+  "message": "操作成功",
+  "data": {
+    "records": [
+      {
+        "id": 1,
+        "memberId": 1,
+        "changeType": 1,
+        "bizType": "RECHARGE",
+        "bizNo": "RC202603080001",
+        "beforeBalance": 100.00,
+        "changeAmount": 200.00,
+        "afterBalance": 300.00,
+        "operatorId": 2,
+        "operatorName": "收银员张三",
+        "source": "门店现金充值",
+        "remark": "开卡首次充值",
+        "createTime": "2026-03-08T16:00:00"
+      }
+    ],
+    "total": 1,
+    "size": 10,
+    "current": 1,
+    "pages": 1
+  }
+}
+```
+
+#### 会员积分调整
+| 接口描述 | URL | 请求方式 | 请求头 | 参数 | 响应 |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| 会员积分人工调整 | `/member/point/adjust` | POST | `Authorization: Bearer <token>` | 见下方示例 | 见下方示例 |
+
+**请求示例：**
+```json
+{
+  "memberId": 1,
+  "changePoints": 50,
+  "source": "活动补偿",
+  "remark": "问卷活动赠送积分"
+}
+```
+
+**说明：**
+- 支持正向增加与负向扣减；扣减后积分不得小于 0。
+- 所有积分调整必须说明来源，并写入积分流水。
+
+#### 分页查询积分流水
+| 接口描述 | URL | 请求方式 | 参数 | 响应 |
+| :--- | :--- | :--- | :--- | :--- |
+| 分页查询会员积分流水 | `/member/point/flow/page` | GET | `pageNum=1&pageSize=10&memberId=1&bizType=CONSUME_EARN` | 见下方示例 |
+
+**响应示例：**
+```json
+{
+  "code": 200,
+  "message": "操作成功",
+  "data": {
+    "records": [
+      {
+        "id": 1,
+        "memberId": 1,
+        "changeType": 1,
+        "bizType": "CONSUME_EARN",
+        "bizNo": "XS202603081630001",
+        "beforePoints": 70,
+        "changePoints": 50,
+        "afterPoints": 120,
+        "operatorId": 2,
+        "operatorName": "收银员张三",
+        "source": "销售订单赠分",
+        "remark": "消费满额赠送积分",
+        "createTime": "2026-03-08T16:30:00"
+      }
+    ],
+    "total": 1,
+    "size": 10,
+    "current": 1,
+    "pages": 1
+  }
+}
+```
+
+#### 收银台结算（支持绑定会员）
+| 接口描述 | URL | 请求方式 | 请求头 | 参数 | 响应 |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| 收银台结算 | `/sale/checkout` | POST | `Authorization: Bearer <token>` | 见下方示例 | 见下方示例 |
+
+**请求示例：**
+```json
+{
+  "paymentType": 2,
+  "realPayAmount": 88.50,
+  "memberId": 1,
+  "remark": "会员消费",
+  "items": [
     {
-      "id": 1,
-      "countId": 1,
       "productId": 1,
-      "productName": "可口可乐",
-      "productBarcode": "6901234567890",
-      "productSpec": "500ml",
-      "productUnit": "瓶",
-      "systemStock": 100,
-      "actualStock": 95,
-      "difference": -5,
-      "status": "DISCREPANCY",
-      "discrepancyReason": "销售未及时录入",
-      "remark": "需关注",
-      "createTime": "2026-01-13T10:30:00",
-      "updateTime": "2026-01-13T10:30:00"
+      "quantity": 2
+    },
+    {
+      "productId": 3,
+      "quantity": 1
     }
   ]
 }
 ```
 
-#### 添加盘点详情
-| 接口描述 | URL | 请求方式 | 请求头 | 参数 | 响应 |
-| :--- | :--- | :--- | :--- | :--- | :--- |
-| 添加盘点详情 | `/inventory/count/{countId}/detail` | POST | `Authorization: Bearer <token>` | `countId` (路径参数), 请求体见下方示例 | 见下方示例 |
-
-**请求示例：**
-```json
-{
-  "productId": 1,
-  "productName": "可口可乐",
-  "productBarcode": "6901234567890",
-  "productSpec": "500ml",
-  "productUnit": "瓶",
-  "systemStock": 100,
-  "actualStock": 95,
-  "discrepancyReason": "销售未及时录入",
-  "remark": "需关注"
-}
-```
+**说明：**
+- `memberId` 为可选；不传则按普通顾客下单。
+- 若传入 `memberId`，后端会校验会员状态，并在销售主单中保留会员快照字段。
+- 当前已支持消费后自动赠积分，并回写会员累计消费金额、消费次数、最后消费时间。
 
 **响应示例：**
 ```json
 {
   "code": 200,
-  "message": "添加盘点详情成功",
-  "data": null
+  "message": "操作成功",
+  "data": "XS202603081830001"
 }
 ```
+
+### 2.7 首页数据看板模块 (Dashboard)
+
+> 说明：首页看板采用聚合型接口，统一返回销售、会员、库存三类核心指标，避免前端拼接多个零散接口。
+
+#### 获取首页看板总览
+| 接口描述 | URL | 请求方式 | 参数 | 响应 |
+| :--- | :--- | :--- | :--- | :--- |
+| 获取首页聚合看板数据 | `/dashboard/overview` | GET | `rangeType=7d&topN=10&nearExpiryDays=7` | 见下方示例 |
+
+**参数说明：**
+- `rangeType`：趋势时间范围，支持 `7d` / `15d` / `30d`，默认 `7d`
+- `topN`：热销商品、库存预警列表返回条数，默认 `10`
+- `nearExpiryDays`：临期商品判定天数，默认 `7`
+
+**响应示例：**
+```json
+{
+  "code": 200,
+  "message": "操作成功",
+  "data": {
+    "sales": {
+      "summary": {
+        "todaySalesAmount": 12880.50,
+        "todayOrderCount": 186,
+        "todayAvgOrderAmount": 69.25,
+        "yesterdaySalesAmount": 11500.00,
+        "salesGrowthRate": 12.00
+      },
+      "trend": [
+        {
+          "date": "2026-03-02",
+          "salesAmount": 9800.00,
+          "orderCount": 152
+        }
+      ],
+      "hotProducts": [
+        {
+          "productId": 1,
+          "productName": "可口可乐",
+          "salesQuantity": 320,
+          "salesAmount": 1120.00
+        }
+      ],
+      "paymentDistribution": [
+        {
+          "paymentType": 2,
+          "paymentTypeName": "微信",
+          "orderCount": 98,
+          "amount": 6800.00
+        }
+      ]
+    },
+    "members": {
+      "summary": {
+        "memberTotal": 2560,
+        "todayNewMemberCount": 18,
+        "weekNewMemberCount": 96,
+        "totalBalance": 186500.00,
+        "totalPoints": 356000,
+        "activeMemberCount": 820
+      },
+      "newMemberTrend": [
+        {
+          "date": "2026-03-02",
+          "count": 12
+        }
+      ],
+      "levelDistribution": {
+        "ready": false,
+        "pendingReason": "会员等级统计待完善等级规则后开放",
+        "items": []
+      }
+    },
+    "inventory": {
+      "summary": {
+        "productTotal": 860,
+        "stockTotalQuantity": 125600,
+        "lowStockProductCount": 23,
+        "nearExpiryProductCount": 16,
+        "expiredProductCount": 4,
+        "inventoryCostAmount": 356800.00
+      },
+      "lowStockList": [
+        {
+          "productId": 11,
+          "productName": "矿泉水",
+          "stock": 3,
+          "lowStockThreshold": 10,
+          "gap": 7
+        }
+      ],
+      "nearExpiryList": [
+        {
+          "productId": 28,
+          "productName": "酸奶",
+          "earliestExpirationDate": "2026-03-10T00:00:00",
+          "remainingDays": 2,
+          "stock": 20
+        }
+      ]
+    },
+    "meta": {
+      "rangeType": "7d",
+      "topN": 10,
+      "nearExpiryDays": 7,
+      "generatedAt": "2026-03-08T21:00:00"
+    }
+  }
+}
+```
+
+**说明：**
+- 所有汇总指标均已做空值兜底；无数据时返回 `0`、空数组或占位对象。
+- `members.levelDistribution` 为预留扩展区块，当前通过 `ready/pendingReason` 提示后续依赖状态。
 
 ---
 

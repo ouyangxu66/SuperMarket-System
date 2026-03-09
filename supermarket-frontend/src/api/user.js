@@ -1,12 +1,13 @@
 import request from '@/utils/request'
 
 /**
- * 用户管理模块 API
+ * 员工管理模块 API
+ * 说明：当前后端仍沿用 /user 路径，以兼容现有认证与权限链路
  */
 
 /**
- * 分页查询用户列表
- * @param {Object} query - 查询参数 { pageNum, pageSize, username }
+ * 分页查询员工列表
+ * @param {Object} query - 查询参数 { pageNum, pageSize, username, keyword }
  * @returns {Promise}
  */
 export function getUserPage(query) {
@@ -18,8 +19,8 @@ export function getUserPage(query) {
 }
 
 /**
- * 新增用户
- * @param {Object} data - 用户信息
+ * 新增员工
+ * @param {Object} data - 员工信息
  * @returns {Promise}
  */
 export function addUser(data) {
@@ -31,8 +32,8 @@ export function addUser(data) {
 }
 
 /**
- * 修改用户
- * @param {Object} data - 用户信息（必须包含 id）
+ * 修改员工
+ * @param {Object} data - 员工信息（必须包含 id）
  * @returns {Promise}
  */
 export function updateUser(data) {
@@ -44,8 +45,8 @@ export function updateUser(data) {
 }
 
 /**
- * 删除用户
- * @param {Number} id - 用户 ID
+ * 删除员工
+ * @param {Number} id - 员工 ID
  * @returns {Promise}
  */
 export function deleteUser(id) {
@@ -56,8 +57,8 @@ export function deleteUser(id) {
 }
 
 /**
- * 批量删除用户
- * @param {Array} ids - 用户 ID 数组
+ * 批量删除员工
+ * @param {Array} ids - 员工 ID 数组
  * @returns {Promise}
  */
 export function deleteUserBatch(ids) {
@@ -69,7 +70,7 @@ export function deleteUserBatch(ids) {
 }
 
 /**
- * 根据 ID 获取用户详情
+ * 根据 ID 获取员工详情
  * @param {Number} id
  * @returns {Promise}
  */
@@ -79,4 +80,3 @@ export function getUserById(id) {
     method: 'get'
   })
 }
-

@@ -15,4 +15,11 @@ public interface UserService extends IService<User> {
      * @return 是否成功
      */
     boolean saveUser(User user);
+
+    /**
+     * 修改用户 (包含角色关联逻辑)
+     * @param user 用户对象
+     * @return 是否成功
+     */
+    boolean updateUser(User user);
 }
