@@ -1,4 +1,3 @@
-TASK_LIST.md
 # 🛒 超市管理系统 - 任务清单
 
 > 状态标记说明：
@@ -9,7 +8,7 @@ TASK_LIST.md
 ## 一、基础架构与环境搭建 
 - [x] **1.1 项目文档初始化 (README, TASK_LIST, API_DOC)**
 - [x] 1.2 后端依赖构建 (pom.xml) 与 SpringBoot 工程初始化
-- [x] 1.3 数据库设计：ER图与基础表结构 (用户/角色/权限)
+- [x] 1.3 数据库设计：ER图与基础表结构 (员工/角色/权限)
 - [x] 1.4 前后端分离跨域配置 (CORS)
 - [x] 1.5 统一返回结果封装 (Result)与全局异常处理
 
@@ -20,19 +19,21 @@ TASK_LIST.md
 - [x] 1.4 CORS 跨域配置
 - [x] 1.5 集成 Swagger/Knife4j 接口文档 (可选，目前通过 Markdown 文档维护)
 
-## 二、用户与权限模块 (Security + JWT)
-- [x] 2.1 数据库建表：用户表、角色表、权限表
+## 二、员工与权限模块 (Security + JWT)
+- [x] 2.1 数据库建表：员工账号表、角色表、权限表
 - [x] 2.2 JWT 工具类封装 (生成/解析 Token)
 - [x] 2.3 Spring Security 认证过滤器链配置
 - [x] 2.4 登录接口实现 (返回 Token)
-- [x] 2.5 用户增删改查 API
-- [x] 2.6 获取当前登录用户信息 API
+- [x] 2.5 员工增删改查 API
+- [x] 2.6 获取当前登录员工信息 API
+- [x] 2.7 员工管理语义升级（兼容 `/user` 路径与 `sys_user` 表）
 
-### 用户与权限模块已执行的详细任务:
-- [x] 2.1 数据库设计 (`sys_user`, `sys_role`)
+### 员工与权限模块已执行的详细任务:
+- [x] 2.1 数据库设计 (`sys_user`, `sys_role`)：`sys_user` 当前承载员工账号与员工基础档案
 - [x] 2.2 JWT 工具类与 Spring Security 过滤器链
 - [x] 2.3 登录接口 (`/auth/login`) 与获取用户信息 (`/auth/info`)
-- [x] 2.4 用户管理 CRUD (增删改查、密码重置、逻辑删除)
+- [x] 2.4 员工管理 CRUD (增删改查、密码重置、逻辑删除)
+- [x] 2.5 员工字段补充：工号、岗位、入职时间、备注、员工姓名
 
 ## 三、商品管理模块
 - [x] 3.1 数据库建表：商品表
@@ -95,18 +96,63 @@ TASK_LIST.md
 
 #### 六、会员管理模块任务(创新点)
 
-- 会员表、积分表设计
-- 等级计算规则实现
-- 积分抵扣逻辑
-- 问卷系统设计
-- 抽奖逻辑与奖品发放
+- [x] 会员表、积分表设计
+- [~] 会员基础管理（列表、详情、新增、修改、逻辑删除）
+- [~] 会员余额/积分调整与流水
+- [ ] 等级计算规则实现
+- [ ] 积分抵扣逻辑
+- [ ] 问卷系统设计
+- [ ] 抽奖逻辑与奖品发放
 
 ------
 
 #### 七、报表与数据分析模块任务
 
-- 统计 SQL / 聚合查询设计
-- 数据中间表设计
-- ECharts 图表封装
-- 管理者数据看板页面
+- [x] 统计 SQL / 聚合查询设计（首页 dashboard 首期总览）
+- [ ] 数据中间表设计
+- [x] ECharts 图表封装 / 接入（首页销售趋势图）
+- [x] 管理者数据看板页面（`/dashboard`）
+- [~] Dashboard 聚合接口扩展（会员等级分布、更多专题图表待后续补充）
+
+### 报表与数据分析模块已执行的详细任务:
+- [x] 新增后端 dashboard 聚合模块（`controller/service/mapper/vo`）
+- [x] 新增首页总览接口 `GET /dashboard/overview`
+- [x] 聚合销售数据：今日销售额、今日订单数、客单价、销售趋势、热销商品排行、支付方式分布
+- [x] 聚合会员数据：会员总数、今日新增、本周新增、储值总额、积分统计、活跃会员数、新增趋势
+- [x] 聚合库存数据：商品总数、库存总量、库存预警商品数、临期商品数、过期商品数、库存成本估值
+- [x] 前端新增 `DashboardView.vue` 与 `dashboard.js`，完成首页驾驶舱展示
+- [x] 路由改造：`/` 重定向到 `/dashboard`，`HomeView.vue` 保持后台布局稳定
+- [x] 接口文档更新：补充 dashboard 总览接口说明与返回示例
+- [~] 权限联动待增强：当前保留 `dashboard:view` 设计，前后端真实 perms 守卫仍待完善
+
+🛒 角色权限清单
+角色
+角色编码
+拥有的权限 (Permissions)
+职责说明
+
+超级管理员
+ROLE_ADMIN
+所有权限
+拥有系统的完全控制权，包括所有菜单和按钮操作。
+
+店长
+ROLE_STORE_MANAGER
+dashboard:view product:list, product:add, product:update category:list inventory:list, inventory:count user:list
+店铺运营核心，负责商品管理（增删改）、库存查看与盘点，以及查看员工列表。
+
+库管员
+ROLE_WAREHOUSE_KEEPER
+dashboard:view inventory:list inventory:in, inventory:out inventory:count product:list
+负责仓库作业，包括库存列表查看、入库、出库、库存盘点以及查看商品信息。
+
+收银员
+ROLE_CASHIER
+dashboard:view
+目前仅分配首页查看权限。(注：待销售模块开发完成后，将补充收银相关权限)
+
+采购员
+ROLE_PURCHASER
+dashboard:view product:list inventory:list
+负责查看商品和库存现状，以便制定采购计划。(注：待采购模块开发完成后，将补充采购单相关权限)
 

@@ -1,0 +1,126 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.supermarket.dashboard.mapper.DashboardMapper">
+
+    <select id="selectSalesSummary" resultType="com.supermarket.dashboard.vo.DashboardOverviewVO$SalesSummary">
+        SELECT
+            COALESCE(SUM(CASE WHEN create_time <![CDATA[>=]]> #{todayStart} AND create_time <![CDATA[<=]]> #{todayEnd} THEN real_amount ELSE 0 END), 0) AS todaySalesAmount,
+            COALESCE(SUM(CASE WHEN create_time <![CDATA[>=]]> #{todayStart} AND create_time <![CDATA[<=]]> #{todayEnd} THEN 1 ELSE 0 END), 0) AS todayOrderCount,
+            COALESCE(SUM(CASE WHEN create_time <![CDATA[>=]]> #{yesterdayStart} AND create_time <![CDATA[<=]]> #{yesterdayEnd} THEN real_amount ELSE 0 END), 0) AS yesterdaySalesAmount
+        FROM sale_order
+        WHERE is_deleted = 0
+          AND status = 1
+    </select>
+
+    <select id="selectSalesTrend" resultType="com.supermarket.dashboard.vo.DashboardOverviewVO$SalesTrendItem">
+        SELECT DATE_FORMAT(create_time, '%Y-%m-%d') AS date,
+               COALESCE(SUM(real_amount), 0) AS salesAmount,
+               COUNT(1) AS orderCount
+        FROM sale_order
+        WHERE is_deleted = 0
+          AND status = 1
+          AND create_time <![CDATA[>=]]> #{startTime}
+          AND create_time <![CDATA[<=]]> #{endTime}
+        GROUP BY DATE_FORMAT(create_time, '%Y-%m-%d')
+        ORDER BY date ASC
+    </select>
+
+    <select id="selectHotProducts" resultType="com.supermarket.dashboard.vo.DashboardOverviewVO$HotProductItem">
+        SELECT sd.product_id AS productId,
+               MAX(sd.product_name) AS productName,
+               COALESCE(SUM(sd.quantity), 0) AS salesQuantity,
+               COALESCE(SUM(sd.amount), 0) AS salesAmount
+        FROM sale_detail sd
+                 INNER JOIN sale_order so ON so.id = sd.order_id
+        WHERE so.is_deleted = 0
+          AND so.status = 1
+          AND so.create_time <![CDATA[>=]]> #{startTime}
+          AND so.create_time <![CDATA[<=]]> #{endTime}
+        GROUP BY sd.product_id
+        ORDER BY salesQuantity DESC, salesAmount DESC
+        LIMIT #{limit}
+    </select>
+
+    <select id="selectPaymentDistribution" resultType="com.supermarket.dashboard.vo.DashboardOverviewVO$PaymentDistributionItem">
+        SELECT payment_type AS paymentType,
+               CASE payment_type
+                   WHEN 1 THEN '现金'
+                   WHEN 2 THEN '微信'
+                   WHEN 3 THEN '支付宝'
+                   ELSE '其他'
+               END AS paymentTypeName,
+               COUNT(1) AS orderCount,
+               COALESCE(SUM(real_amount), 0) AS amount
+        FROM sale_order
+        WHERE is_deleted = 0
+          AND status = 1
+          AND create_time <![CDATA[>=]]> #{startTime}
+          AND create_time <![CDATA[<=]]> #{endTime}
+        GROUP BY payment_type
+        ORDER BY amount DESC
+    </select>
+
+    <select id="selectMemberSummary" resultType="com.supermarket.dashboard.vo.DashboardOverviewVO$MemberSummary">
+        SELECT COUNT(1) AS memberTotal,
+               COALESCE(SUM(CASE WHEN register_time <![CDATA[>=]]> #{todayStart} AND register_time <![CDATA[<=]]> #{todayEnd} THEN 1 ELSE 0 END), 0) AS todayNewMemberCount,
+               COALESCE(SUM(CASE WHEN register_time <![CDATA[>=]]> #{weekStart} THEN 1 ELSE 0 END), 0) AS weekNewMemberCount,
+               COALESCE(SUM(balance), 0) AS totalBalance,
+               COALESCE(SUM(points), 0) AS totalPoints,
+               COALESCE(SUM(CASE WHEN last_consume_time IS NOT NULL AND last_consume_time <![CDATA[>=]]> #{activeSince} THEN 1 ELSE 0 END), 0) AS activeMemberCount
+        FROM member
+        WHERE is_deleted = 0
+    </select>
+
+    <select id="selectMemberTrend" resultType="com.supermarket.dashboard.vo.DashboardOverviewVO$MemberTrendItem">
+        SELECT DATE_FORMAT(register_time, '%Y-%m-%d') AS date,
+               COUNT(1) AS count
+        FROM member
+        WHERE is_deleted = 0
+          AND register_time <![CDATA[>=]]> #{startTime}
+          AND register_time <![CDATA[<=]]> #{endTime}
+        GROUP BY DATE_FORMAT(register_time, '%Y-%m-%d')
+        ORDER BY date ASC
+    </select>
+
+    <select id="selectInventorySummary" resultType="com.supermarket.dashboard.vo.DashboardOverviewVO$InventorySummary">
+        SELECT COUNT(1) AS productTotal,
+               COALESCE(SUM(stock), 0) AS stockTotalQuantity,
+               COALESCE(SUM(CASE WHEN low_stock_threshold IS NOT NULL AND stock <![CDATA[<=]]> low_stock_threshold THEN 1 ELSE 0 END), 0) AS lowStockProductCount,
+               COALESCE(SUM(CASE WHEN earliest_expiration_date IS NOT NULL AND earliest_expiration_date <![CDATA[>=]]> DATE(#{today}) AND earliest_expiration_date <![CDATA[<=]]> DATE(#{nearExpiryEnd}) THEN 1 ELSE 0 END), 0) AS nearExpiryProductCount,
+               COALESCE(SUM(CASE WHEN earliest_expiration_date IS NOT NULL AND earliest_expiration_date <![CDATA[<]]> DATE(#{today}) THEN 1 ELSE 0 END), 0) AS expiredProductCount,
+               COALESCE(SUM(stock * cost_price), 0) AS inventoryCostAmount
+        FROM product
+        WHERE is_deleted = 0
+    </select>
+
+    <select id="selectLowStockList" resultType="com.supermarket.dashboard.vo.DashboardOverviewVO$LowStockItem">
+        SELECT id AS productId,
+               name AS productName,
+               stock,
+               low_stock_threshold AS lowStockThreshold,
+               (low_stock_threshold - stock) AS gap
+        FROM product
+        WHERE is_deleted = 0
+          AND low_stock_threshold IS NOT NULL
+          AND stock <![CDATA[<=]]> low_stock_threshold
+        ORDER BY stock ASC, id ASC
+        LIMIT #{limit}
+    </select>
+
+    <select id="selectNearExpiryList" resultType="com.supermarket.dashboard.vo.DashboardOverviewVO$NearExpiryItem">
+        SELECT id AS productId,
+               name AS productName,
+               earliest_expiration_date AS earliestExpirationDate,
+               DATEDIFF(earliest_expiration_date, DATE(#{today})) AS remainingDays,
+               stock
+        FROM product
+        WHERE is_deleted = 0
+          AND earliest_expiration_date IS NOT NULL
+          AND earliest_expiration_date <![CDATA[>=]]> DATE(#{today})
+          AND earliest_expiration_date <![CDATA[<=]]> DATE(#{nearExpiryEnd})
+        ORDER BY earliest_expiration_date ASC, id ASC
+        LIMIT #{limit}
+    </select>
+</mapper>

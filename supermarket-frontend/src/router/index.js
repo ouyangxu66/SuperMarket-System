@@ -23,12 +23,41 @@ const router = createRouter({
       path: '/',
       name: 'home',
       component: () => import('../views/HomeView.vue'),
+      redirect: '/dashboard',
       children: [
+        {
+          path: '/dashboard',
+          name: 'dashboard',
+          component: () => import('../views/dashboard/DashboardView.vue'),
+          meta: { title: '首页看板' }
+        },
+        {
+          path: '/sale/cashier',
+          name: 'sale-cashier',
+          component: () => import('../views/sale/CashierView.vue'),
+          meta: { title: '收银台' }
+        },
+        {
+          path: '/sale/order-list',
+          name: 'sale-order-list',
+          component: () => import('../views/sale/SaleOrderListView.vue'),
+          meta: { title: '销售记录' }
+        },
+        {
+          path: '/member/list',
+          name: 'member-list',
+          component: () => import('../views/member/MemberListView.vue'),
+          meta: { title: '会员管理' }
+        },
         {
           path: '/user/list',
           name: 'user-list',
           component: () => import('../views/user/UserListView.vue'),
-          meta: { title: '用户列表' }
+          meta: { title: '员工列表' }
+        },
+        {
+          path: '/employee/list',
+          redirect: '/user/list'
         },
         {
           path: '/product/list',

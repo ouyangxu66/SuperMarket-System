@@ -7,7 +7,7 @@
           <span>超市管理后台</span>
         </div>
         <el-menu
-          default-active="/"
+          :default-active="activeMenu"
           class="el-menu-vertical"
           background-color="#fff"
           text-color="#444"
@@ -15,7 +15,7 @@
           router
           :border-right="null"
         >
-          <el-menu-item index="/">
+          <el-menu-item index="/dashboard">
             <el-icon><HomeFilled /></el-icon>
             <span>首页</span>
           </el-menu-item>
@@ -23,9 +23,26 @@
           <el-sub-menu index="2">
             <template #title>
               <el-icon><User /></el-icon>
-              <span>用户管理</span>
+              <span>员工管理</span>
             </template>
-            <el-menu-item index="/user/list">用户列表</el-menu-item>
+            <el-menu-item index="/user/list">员工列表</el-menu-item>
+          </el-sub-menu>
+
+          <el-sub-menu index="member">
+            <template #title>
+              <el-icon><User /></el-icon>
+              <span>会员管理</span>
+            </template>
+            <el-menu-item index="/member/list">会员列表</el-menu-item>
+          </el-sub-menu>
+
+          <el-sub-menu index="sale">
+            <template #title>
+              <el-icon><Goods /></el-icon>
+              <span>销售管理</span>
+            </template>
+            <el-menu-item index="/sale/cashier">收银台</el-menu-item>
+            <el-menu-item index="/sale/order-list">销售记录</el-menu-item>
           </el-sub-menu>
 
           <el-sub-menu index="3">
@@ -45,7 +62,6 @@
             <el-menu-item index="/inventory/list">库存列表</el-menu-item>
             <el-menu-item index="/inventory/count">库存盘点</el-menu-item>
           </el-sub-menu>
-
         </el-menu>
       </el-aside>
 
@@ -54,7 +70,8 @@
           <div class="header-left">
             <el-button link icon="Fold" style="font-size: 20px; color: #333; margin-right: 16px;"></el-button>
             <el-breadcrumb separator="/">
-              <el-breadcrumb-item :to="{ path: '/' }">首页</el-breadcrumb-item>
+              <el-breadcrumb-item :to="{ path: '/dashboard' }">首页</el-breadcrumb-item>
+              <el-breadcrumb-item v-if="route.path !== '/dashboard'">{{ route.meta?.title || '当前页面' }}</el-breadcrumb-item>
             </el-breadcrumb>
           </div>
           <div class="header-right">
@@ -62,7 +79,7 @@
               <span class="el-dropdown-link">
                 <el-avatar :size="32" src="https://cube.elemecdn.com/0/88/03b0d39583f48206768a7534e55bcpng.png" style="margin-right: 8px"></el-avatar>
                 Admin
-                <el-icon class="el-icon--right"><arrow-down /></el-icon>
+                <el-icon class="el-icon--right"><ArrowDown /></el-icon>
               </span>
               <template #dropdown>
                 <el-dropdown-menu>
@@ -75,61 +92,7 @@
         </el-header>
 
         <el-main class="main">
-          <!-- 路由出口 -->
-          <router-view v-if="$route.path !== '/'" />
-
-          <!-- Default Dashboard Content if on Home -->
-          <div v-else>
-            <el-row :gutter="20">
-              <el-col :span="6">
-                <el-card shadow="hover">
-                  <template #header>
-                    <div class="card-header">
-                      <span>总销售额</span>
-                    </div>
-                  </template>
-                  <div class="card-value">￥ 120,000</div>
-                </el-card>
-              </el-col>
-              <el-col :span="6">
-                <el-card shadow="hover">
-                  <template #header>
-                    <div class="card-header">
-                      <span>订单数</span>
-                    </div>
-                  </template>
-                  <div class="card-value">1,200</div>
-                </el-card>
-              </el-col>
-              <el-col :span="6">
-                <el-card shadow="hover">
-                  <template #header>
-                    <div class="card-header">
-                      <span>用户数</span>
-                    </div>
-                  </template>
-                  <div class="card-value">5,000</div>
-                </el-card>
-              </el-col>
-              <el-col :span="6">
-                <el-card shadow="hover">
-                  <template #header>
-                    <div class="card-header">
-                      <span>商品总数</span>
-                    </div>
-                  </template>
-                  <div class="card-value">800</div>
-                </el-card>
-              </el-col>
-            </el-row>
-
-            <el-card style="margin-top: 20px;">
-              <template #header>
-                 <span>系统公告</span>
-              </template>
-              <p>欢迎使用超市管理系统，前端基于 Vue 3 + Element Plus 构建，遵循 Material Design 设计规范。</p>
-            </el-card>
-          </div>
+          <router-view />
         </el-main>
       </el-container>
     </el-container>
@@ -137,34 +100,25 @@
 </template>
 
 <script setup>
-/**
- * 首页视图 (Layout)
- * 包含侧边栏菜单、顶部导航栏和主要内容区域
- * 这里采用了常见的后台管理系统布局
- */
-import { useRouter } from 'vue-router'
+import { ArrowDown, Box, Goods, HomeFilled, User } from '@element-plus/icons-vue'
+import { computed } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import { logout } from '@/api/auth'
 import { ElMessage } from 'element-plus'
 
 const router = useRouter()
+const route = useRoute()
+const activeMenu = computed(() => route.path)
 
-/**
- * 处理下拉菜单指令
- * 目前主要用于处理退出登录
- * @param {String} command - 下拉菜单项的 command 属性值
- */
 const handleCommand = async (command) => {
   if (command === 'logout') {
     try {
-      // 调用后端退出接口（可选，视后端是否需要处理服务端 session/token 无效化）
-       await logout()
-    } catch(e) {
+      await logout()
+    } catch (e) {
       console.error(e)
     }
-    // 清除本地存储的 Token
     localStorage.removeItem('token')
     ElMessage.success('已退出登录')
-    // 跳转回登录页
     router.push('/login')
   } else if (command === 'profile') {
     router.push('/profile')
@@ -173,7 +127,6 @@ const handleCommand = async (command) => {
 </script>
 
 <style scoped>
-/* 布局样式 */
 .layout-container {
   height: 100vh;
 }
@@ -223,19 +176,8 @@ const handleCommand = async (command) => {
 }
 
 .main {
-  background-color: #fafafa;
+  background: linear-gradient(180deg, #f5f7fb 0%, #eef3fb 100%);
   padding: 24px;
-}
-
-.card-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.card-value {
-  font-size: 24px;
-  font-weight: bold;
-  color: #333;
+  overflow: auto;
 }
 </style>

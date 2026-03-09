@@ -5,6 +5,10 @@ spring:
   application:
     name: supermarket-backend
 
+  jackson:
+    date-format: yyyy-MM-dd
+    time-zone: GMT+8
+
   # 数据库配置 (后续创建数据库后，请修改这里的 username 和 password)
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
