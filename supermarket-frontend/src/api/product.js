@@ -105,12 +105,13 @@ export function getExpiredProducts() {
 }
 
 /**
- * 获取分类树形结构 (商品列表筛选用)
- * @returns {Promise}
+ * 导出商品列表
  */
-export function getCategoryTree() {
+export function exportProducts(query) {
   return request({
-    url: '/product/category/tree',
-    method: 'get'
+    url: '/product/export',
+    method: 'get',
+    params: query,
+    responseType: 'blob'
   })
 }

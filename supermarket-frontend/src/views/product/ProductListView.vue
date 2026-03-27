@@ -34,6 +34,7 @@
     <el-card class="table-card">
       <div class="table-operations">
         <el-button type="primary" icon="Plus" @click="handleAdd">新增商品</el-button>
+        <el-button type="warning" icon="Download" @click="handleExport">导出商品列表Excel</el-button>
       </div>
 
       <el-table
@@ -43,6 +44,23 @@
         border
       >
         <el-table-column prop="id" label="ID" width="80" align="center" />
+        <el-table-column label="图片" width="100" align="center">
+          <template #default="scope">
+            <el-image
+              style="width: 50px; height: 50px"
+              :src="scope.row.imageUrl"
+              :preview-src-list="[scope.row.imageUrl]"
+              fit="contain"
+              preview-teleported
+            >
+              <template #error>
+                <div class="image-slot">
+                  <el-icon><Picture /></el-icon>
+                </div>
+              </template>
+            </el-image>
+          </template>
+        </el-table-column>
         <el-table-column prop="barcode" label="条码" width="140" />
         <el-table-column prop="name" label="商品名称" min-width="150" show-overflow-tooltip />
         <el-table-column prop="categoryName" label="分类" width="120" show-overflow-tooltip />
@@ -164,6 +182,19 @@
         <el-form-item label="备注">
           <el-input v-model="form.remark" type="textarea" :rows="2" />
         </el-form-item>
+        <el-form-item label="商品图片">
+          <el-upload
+            class="avatar-uploader"
+            action="#"
+            :http-request="handleUpload"
+            :show-file-list="false"
+            :before-upload="beforeAvatarUpload"
+            accept="image/*"
+          >
+            <img v-if="form.imageUrl" :src="form.imageUrl" class="avatar" />
+            <el-icon v-else class="avatar-uploader-icon"><Plus /></el-icon>
+          </el-upload>
+        </el-form-item>
       </el-form>
       <template #footer>
         <div class="dialog-footer">
@@ -180,19 +211,19 @@
  * 商品列表页面
  */
 import { ref, reactive, onMounted } from 'vue'
-import { ElMessage, ElMessageBox } from 'element-plus'
 import {
   getProductPage,
   addProduct,
   updateProduct,
   updateProductStatus,
   deleteProduct,
-  getCategoryTree
+  exportProducts
 } from '@/api/product'
+import { getCategoryTree } from '@/api/category'
+import { uploadFile } from '@/api/common'
+import { Plus, Picture } from '@element-plus/icons-vue'
+import { ElMessage, ElMessageBox } from 'element-plus'
 
-/**
- * 状态定义
- */
 const loading = ref(false)
 const total = ref(0)
 const productList = ref([])
@@ -207,14 +238,12 @@ const queryParams = reactive({
   status: null
 })
 
-// 对话框配置
 const dialog = reactive({
   visible: false,
   title: '',
   type: 'add'
 })
 
-// 表单数据
 const form = reactive({
   id: null,
   name: '',
@@ -228,18 +257,20 @@ const form = reactive({
   lowStockThreshold: 10,
   status: 1,
   remark: '',
-  shelfLifeDays: 0
+  shelfLifeDays: 0,
+  imageUrl: ''
 })
 
-const formRef = ref(null)
-
-// 校验规则
 const rules = {
   name: [{ required: true, message: '请输入商品名称', trigger: 'blur' }],
   barcode: [{ required: true, message: '请输入商品条码', trigger: 'blur' }],
   categoryId: [{ required: true, message: '请选择商品分类', trigger: 'change' }],
-  price: [{ required: true, message: '请输入销售价', trigger: 'blur' }]
+  price: [{ required: true, message: '请输入销售价', trigger: 'blur' }],
+  costPrice: [{ required: true, message: '请输入进货价', trigger: 'blur' }],
+  stock: [{ required: true, message: '请输入库存', trigger: 'blur' }]
 }
+
+const formRef = ref(null)
 
 /**
  * 生命周期
@@ -355,6 +386,57 @@ const handleStatusChange = async (row) => {
   }
 }
 
+// 导出
+const handleExport = async () => {
+  try {
+    const params = { ...queryParams }
+    // 移除分页参数
+    delete params.pageNum
+    delete params.pageSize
+
+    const res = await exportProducts(params)
+    const blob = new Blob([res.data], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' })
+    const link = document.createElement('a')
+    link.href = window.URL.createObjectURL(blob)
+    link.download = `商品档案_${new Date().getTime()}.xlsx`
+    link.click()
+    window.URL.revokeObjectURL(link.href)
+    ElMessage.success('导出成功')
+  } catch (error) {
+    ElMessage.error('导出失败')
+    console.error(error)
+  }
+}
+
+// 上传图片
+const handleUpload = async (options) => {
+  const formData = new FormData()
+  formData.append('file', options.file)
+  try {
+    const res = await uploadFile(formData)
+    if (res.code === 200) {
+      form.imageUrl = res.data
+      ElMessage.success('上传成功')
+    } else {
+      ElMessage.error(res.message || '上传失败')
+    }
+  } catch (error) {
+    console.error('上传图片出错', error)
+    ElMessage.error('上传图片失败')
+  }
+}
+
+const beforeAvatarUpload = (rawFile) => {
+  if (rawFile.type !== 'image/jpeg' && rawFile.type !== 'image/png') {
+    ElMessage.error('图片必须是 JPG/PNG 格式!')
+    return false
+  } else if (rawFile.size / 1024 / 1024 > 2) {
+    ElMessage.error('图片大小不能超过 2MB!')
+    return false
+  }
+  return true
+}
+
 // 提交
 const submitForm = async () => {
   if (!formRef.value) return
@@ -392,6 +474,7 @@ const resetFormState = () => {
   form.status = 1
   form.remark = ''
   form.shelfLifeDays = 0
+  form.imageUrl = ''
 }
 
 const resetForm = () => {
@@ -405,10 +488,34 @@ const resetForm = () => {
 .search-card {
   margin-bottom: 20px;
 }
+.avatar-uploader .el-upload {
+  border: 1px dashed var(--el-border-color);
+  border-radius: 6px;
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+  transition: var(--el-transition-duration-fast);
+}
+.avatar-uploader .el-upload:hover {
+  border-color: var(--el-color-primary);
+}
+.el-icon.avatar-uploader-icon {
+  font-size: 28px;
+  color: #8c939d;
+  width: 100px;
+  height: 100px;
+  text-align: center;
+  line-height: 100px;
+}
+.avatar {
+  width: 100px;
+  height: 100px;
+  display: block;
+  object-fit: contain;
+}
 .pagination-container {
   margin-top: 20px;
   display: flex;
   justify-content: flex-end;
 }
 </style>
-

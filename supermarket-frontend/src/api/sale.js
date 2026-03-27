@@ -18,7 +18,7 @@ export function checkout(data) {
 }
 
 /**
- * 分页查询销售订单
+ * 销售流水查询
  * @param {Object} query
  * @returns {Promise}
  */
@@ -31,13 +31,27 @@ export function getSalePage(query) {
 }
 
 /**
- * 获取销售订单详情
- * @param {number} id
+ * 销售详情
+ * @param {Number} id
  * @returns {Promise}
  */
 export function getSaleDetail(id) {
   return request({
     url: `/sale/${id}`,
     method: 'get'
+  })
+}
+
+/**
+ * 导出销售流水
+ * @param {Object} query
+ * @returns {Promise}
+ */
+export function exportSale(query) {
+  return request({
+    url: '/sale/export',
+    method: 'get',
+    params: query,
+    responseType: 'blob'
   })
 }

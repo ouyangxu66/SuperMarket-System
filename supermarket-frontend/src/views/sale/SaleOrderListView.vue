@@ -55,6 +55,7 @@
         <el-form-item>
           <el-button type="primary" icon="Search" @click="handleQuery">搜索</el-button>
           <el-button icon="Refresh" @click="resetQuery">重置</el-button>
+          <el-button type="warning" icon="Download" @click="handleExport">导出销售流水Excel</el-button>
         </el-form-item>
       </el-form>
     </el-card>
@@ -140,7 +141,8 @@
 
 <script setup>
 import { computed, onMounted, reactive, ref } from 'vue'
-import { getSaleDetail, getSalePage } from '@/api/sale'
+import { getSaleDetail, getSalePage, exportSale } from '@/api/sale'
+import { ElMessage } from 'element-plus'
 
 const loading = ref(false)
 const total = ref(0)
@@ -186,7 +188,40 @@ const fetchSaleList = async () => {
 
 const handleQuery = () => {
   queryParams.pageNum = 1
+  if (dateRange.value && dateRange.value.length === 2) {
+    queryParams.startTime = dateRange.value[0]
+    queryParams.endTime = dateRange.value[1]
+  } else {
+    queryParams.startTime = undefined
+    queryParams.endTime = undefined
+  }
   fetchSaleList()
+}
+
+const handleExport = async () => {
+  try {
+    const params = { ...queryParams }
+    // 移除分页参数
+    delete params.pageNum
+    delete params.pageSize
+
+    if (dateRange.value && dateRange.value.length === 2) {
+      params.startTime = dateRange.value[0]
+      params.endTime = dateRange.value[1]
+    }
+
+    const res = await exportSale(params)
+    const blob = new Blob([res.data], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' })
+    const link = document.createElement('a')
+    link.href = window.URL.createObjectURL(blob)
+    link.download = `销售流水_${new Date().getTime()}.xlsx`
+    link.click()
+    window.URL.revokeObjectURL(link.href)
+    ElMessage.success('导出成功')
+  } catch (error) {
+    ElMessage.error('导出失败')
+    console.error(error)
+  }
 }
 
 const resetQuery = () => {

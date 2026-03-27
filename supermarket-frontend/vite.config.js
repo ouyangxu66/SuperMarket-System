@@ -25,6 +25,11 @@ export default defineConfig({
         // 重写路径：将请求路径中的 '/api' 前缀去掉
         // 例如：前端请求 /api/auth/login -> 代理转发到 backend/auth/login
         rewrite: (path) => path.replace(/^\/api/, '')
+      },
+      // 代理上传的静态资源
+      '/uploads': {
+        target: 'http://localhost:8080',
+        changeOrigin: true
       }
     }
   }

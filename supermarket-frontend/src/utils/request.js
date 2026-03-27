@@ -33,6 +33,11 @@ service.interceptors.request.use(
 // 在接收到响应之后做一些处理，例如统一错误处理
 service.interceptors.response.use(
   response => {
+    // 兼容文件流下载：如果响应类型为 blob 或 arraybuffer，直接返回响应对象
+    if (response.config.responseType === 'blob' || response.config.responseType === 'arraybuffer') {
+      return response
+    }
+
     const res = response.data
 
     // 如果返回的状态码不是200，说明业务逻辑报错（根据后端约定的结果结构）

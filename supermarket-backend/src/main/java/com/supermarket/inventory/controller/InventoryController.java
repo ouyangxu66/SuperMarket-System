@@ -57,4 +57,13 @@ public class InventoryController {
         }
         return Result.success(product);
     }
+
+    /**
+     * 导出库存清单
+     * GET /inventory/export
+     */
+    @GetMapping("/export")
+    public void export(javax.servlet.http.HttpServletResponse response) {
+        inventoryService.export(response);
+    }
 }

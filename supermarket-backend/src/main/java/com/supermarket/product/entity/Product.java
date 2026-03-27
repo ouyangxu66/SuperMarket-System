@@ -19,6 +19,9 @@ public class Product implements Serializable {
     private String spec;
     private String unit;
 
+    // 新增图片字段
+    private String imageUrl; // 商品图片URL
+
     private BigDecimal price;      // 售价
     private BigDecimal costPrice;  // 进价
 
@@ -42,6 +45,9 @@ public class Product implements Serializable {
     @TableLogic
     private Integer deleted;
 
+    @TableField(exist = false)
+    private String categoryName;
+
     // --- Getter / Setter ---
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
@@ -55,6 +61,10 @@ public class Product implements Serializable {
     public void setSpec(String spec) { this.spec = spec; }
     public String getUnit() { return unit; }
     public void setUnit(String unit) { this.unit = unit; }
+
+    public String getImageUrl() { return imageUrl; }
+    public void setImageUrl(String imageUrl) { this.imageUrl = imageUrl; }
+
     public BigDecimal getPrice() { return price; }
     public void setPrice(BigDecimal price) { this.price = price; }
     public BigDecimal getCostPrice() { return costPrice; }
@@ -84,4 +94,7 @@ public class Product implements Serializable {
     public void setUpdateTime(Date updateTime) { this.updateTime = updateTime; }
     public Integer getDeleted() { return deleted; }
     public void setDeleted(Integer deleted) { this.deleted = deleted; }
+
+    public String getCategoryName() { return categoryName; }
+    public void setCategoryName(String categoryName) { this.categoryName = categoryName; }
 }

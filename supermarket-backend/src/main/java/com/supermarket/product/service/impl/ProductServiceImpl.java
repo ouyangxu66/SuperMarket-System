@@ -1,25 +1,37 @@
 package com.supermarket.product.service.impl;
 
+import com.alibaba.excel.EasyExcel;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.supermarket.product.dto.ProductFormDTO;
 import com.supermarket.product.entity.Product;
+import com.supermarket.product.entity.ProductCategory;
+import com.supermarket.product.mapper.ProductCategoryMapper;
 import com.supermarket.product.mapper.ProductMapper;
 import com.supermarket.product.service.ProductService;
 import org.springframework.stereotype.Service;
 
+import java.nio.charset.StandardCharsets;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.GregorianCalendar;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 /**
  * 商品服务实现类
  */
 @Service
 public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product> implements ProductService {
+
+    private final ProductCategoryMapper productCategoryMapper; // Inject mapper
+
+    public ProductServiceImpl(ProductCategoryMapper productCategoryMapper) { // Add constructor
+        this.productCategoryMapper = productCategoryMapper;
+    }
 
     @Override
     public IPage<Product> queryPage(int pageNum, int pageSize, String name, Long categoryId, Integer status) {
@@ -39,7 +51,28 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product> impl
                // 按创建时间降序排列
                .orderByDesc(Product::getCreateTime);
 
-        return this.page(page, wrapper);
+        IPage<Product> productPage = this.page(page, wrapper);
+        List<Product> records = productPage.getRecords();
+        if (records != null && !records.isEmpty()) {
+            List<Long> categoryIds = records.stream()
+                .map(Product::getCategoryId)
+                .filter(id -> id != null && id > 0)
+                .distinct()
+                .collect(Collectors.toList());
+
+            if (!categoryIds.isEmpty()) {
+                List<ProductCategory> categories = productCategoryMapper.selectBatchIds(categoryIds);
+                Map<Long, String> categoryMap = categories.stream()
+                    .collect(Collectors.toMap(ProductCategory::getId, ProductCategory::getName));
+
+                records.forEach(p -> {
+                    if (p.getCategoryId() != null) {
+                        p.setCategoryName(categoryMap.get(p.getCategoryId()));
+                    }
+                });
+            }
+        }
+        return productPage;
     }
 
     @Override
@@ -65,6 +98,8 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product> impl
         product.setLowStockThreshold(dto.getLowStockThreshold());
         product.setStatus(dto.getStatus() != null ? dto.getStatus() : 1);
         product.setRemark(dto.getRemark());
+        product.setShelfLifeDays(dto.getShelfLifeDays());
+        product.setLatestProductionDate(dto.getLatestProductionDate());
 
         // 如果设置了生产日期和保质期天数，计算到期日期
         if (dto.getLatestProductionDate() != null && dto.getShelfLifeDays() != null) {
@@ -107,6 +142,8 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product> impl
         product.setLowStockThreshold(dto.getLowStockThreshold());
         product.setStatus(dto.getStatus());
         product.setRemark(dto.getRemark());
+        product.setShelfLifeDays(dto.getShelfLifeDays());
+        product.setLatestProductionDate(dto.getLatestProductionDate());
 
         // 如果设置了生产日期和保质期天数，计算到期日期
         if (dto.getLatestProductionDate() != null && dto.getShelfLifeDays() != null) {
@@ -151,13 +188,67 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product> impl
     public List<Product> getExpiredProducts() {
         // 查询到期日期小于当前日期的商品（即已过期的商品）
         Date currentDate = new Date();
-        
+
         LambdaQueryWrapper<Product> wrapper = new LambdaQueryWrapper<>();
         wrapper.isNotNull(Product::getEarliestExpirationDate)  // 到期日期不为空
                .lt(Product::getEarliestExpirationDate, currentDate)  // 到期日期 < 当前日期
                .eq(Product::getDeleted, 0)                          // 未删除
                .gt(Product::getStock, 0);                           // 库存大于0
-        
+
         return this.list(wrapper);
+    }
+
+    @Override
+    public void export(javax.servlet.http.HttpServletResponse response, String name, Long categoryId, Integer status) {
+        try {
+            LambdaQueryWrapper<Product> wrapper = new LambdaQueryWrapper<>();
+            wrapper.like(name != null && !name.trim().isEmpty(), Product::getName, name)
+                   .eq(categoryId != null, Product::getCategoryId, categoryId)
+                   .eq(status != null, Product::getStatus, status)
+                   .eq(Product::getDeleted, 0)
+                   .orderByDesc(Product::getCreateTime);
+
+            List<Product> list = this.list(wrapper);
+
+            // 获取分类名称映射
+            List<Long> categoryIds = list.stream().map(Product::getCategoryId).distinct().collect(Collectors.toList());
+            Map<Long, String> categoryMap = new java.util.HashMap<>();
+            if (!categoryIds.isEmpty()) {
+                List<ProductCategory> categories = productCategoryMapper.selectBatchIds(categoryIds);
+                for (ProductCategory category : categories) {
+                    categoryMap.put(category.getId(), category.getName());
+                }
+            }
+
+            List<com.supermarket.product.vo.ProductExcelVO> excelList = new java.util.ArrayList<>();
+            for (Product product : list) {
+                com.supermarket.product.vo.ProductExcelVO vo = new com.supermarket.product.vo.ProductExcelVO();
+                vo.setName(product.getName());
+                vo.setBarcode(product.getBarcode());
+                vo.setCategoryName(categoryMap.getOrDefault(product.getCategoryId(), "未知分类"));
+                vo.setCostPrice(product.getCostPrice());
+                vo.setPrice(product.getPrice());
+
+                String statusStr = "未知";
+                if (product.getStatus() != null) {
+                    statusStr = product.getStatus() == 1 ? "上架" : "下架";
+                }
+                vo.setStatus(statusStr);
+
+                excelList.add(vo);
+            }
+
+            response.setContentType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+            response.setCharacterEncoding("utf-8");
+            String fileName = java.net.URLEncoder.encode("商品列表_" + System.currentTimeMillis() + ".xlsx", StandardCharsets.UTF_8).replaceAll("\\+", "%20");
+            response.setHeader("Content-Disposition", "attachment;filename=" + fileName);
+
+            EasyExcel.write(response.getOutputStream(), com.supermarket.product.vo.ProductExcelVO.class)
+                    .sheet("商品列表")
+                    .doWrite(excelList);
+
+        } catch (Exception e) {
+            throw new RuntimeException("导出Excel失败", e);
+        }
     }
 }

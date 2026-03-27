@@ -24,4 +24,10 @@ public class DashboardController {
                                                 @RequestParam(required = false, defaultValue = "7") Integer nearExpiryDays) {
         return Result.success(dashboardService.getOverview(rangeType, topN, nearExpiryDays));
     }
+
+    @GetMapping("/export")
+    public void export(@RequestParam(required = false, defaultValue = "7d") String rangeType,
+                       javax.servlet.http.HttpServletResponse response) {
+        dashboardService.exportSales(response, rangeType);
+    }
 }

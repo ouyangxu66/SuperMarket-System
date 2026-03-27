@@ -30,4 +30,10 @@ public interface InventoryService {
      * @return 库存信息
      */
     Product getInventoryDetail(Long productId);
+
+    /**
+     * 导出库存数据
+     * @param response
+     */
+    void export(javax.servlet.http.HttpServletResponse response);
 }

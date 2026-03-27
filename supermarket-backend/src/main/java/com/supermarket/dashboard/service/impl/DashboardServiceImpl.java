@@ -3,10 +3,13 @@ package com.supermarket.dashboard.service.impl;
 import com.supermarket.dashboard.mapper.DashboardMapper;
 import com.supermarket.dashboard.service.DashboardService;
 import com.supermarket.dashboard.vo.DashboardOverviewVO;
+import com.supermarket.dashboard.vo.DashboardSalesExcelVO;
+import com.alibaba.excel.EasyExcel;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.nio.charset.StandardCharsets;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.Date;
@@ -37,7 +40,6 @@ public class DashboardServiceImpl implements DashboardService {
         Date weekStart = addDays(todayStart, -6);
         Date activeSince = addDays(todayStart, -30);
         Date trendStart = addDays(todayStart, -(days - 1));
-        Date trendEnd = todayEnd;
         Date nearExpiryEnd = endOfDay(addDays(todayStart, safeNearExpiryDays));
 
         DashboardOverviewVO overview = new DashboardOverviewVO();
@@ -54,20 +56,20 @@ public class DashboardServiceImpl implements DashboardService {
         salesSummary.setSalesGrowthRate(calculateGrowthRate(salesSummary.getTodaySalesAmount(), salesSummary.getYesterdaySalesAmount()));
 
         List<DashboardOverviewVO.SalesTrendItem> salesTrend = fillSalesTrend(
-                dashboardMapper.selectSalesTrend(trendStart, trendEnd), trendStart, days
+                dashboardMapper.selectSalesTrend(trendStart, todayEnd), trendStart, days
         );
 
         DashboardOverviewVO.SalesSection salesSection = new DashboardOverviewVO.SalesSection();
         salesSection.setSummary(salesSummary);
         salesSection.setTrend(salesTrend);
-        salesSection.setHotProducts(dashboardMapper.selectHotProducts(trendStart, trendEnd, safeTopN));
-        salesSection.setPaymentDistribution(dashboardMapper.selectPaymentDistribution(trendStart, trendEnd));
+        salesSection.setHotProducts(dashboardMapper.selectHotProducts(trendStart, todayEnd, safeTopN));
+        salesSection.setPaymentDistribution(dashboardMapper.selectPaymentDistribution(trendStart, todayEnd));
         overview.setSales(salesSection);
 
         DashboardOverviewVO.MemberSection memberSection = new DashboardOverviewVO.MemberSection();
         DashboardOverviewVO.MemberSummary memberSummary = dashboardMapper.selectMemberSummary(todayStart, todayEnd, weekStart, activeSince);
         memberSection.setSummary(memberSummary == null ? new DashboardOverviewVO.MemberSummary() : memberSummary);
-        memberSection.setNewMemberTrend(fillMemberTrend(dashboardMapper.selectMemberTrend(trendStart, trendEnd), trendStart, days));
+        memberSection.setNewMemberTrend(fillMemberTrend(dashboardMapper.selectMemberTrend(trendStart, todayEnd), trendStart, days));
         DashboardOverviewVO.ReadyBlock levelDistribution = new DashboardOverviewVO.ReadyBlock();
         levelDistribution.setReady(false);
         levelDistribution.setPendingReason("会员等级统计待完善等级规则后开放");
@@ -211,5 +213,62 @@ public class DashboardServiceImpl implements DashboardService {
         calendar.setTime(date);
         calendar.add(Calendar.MILLISECOND, millis);
         return calendar.getTime();
+    }
+
+    @Override
+    public void exportSales(javax.servlet.http.HttpServletResponse response, String rangeType) {
+        try {
+            int days = resolveRangeDays(rangeType);
+            Date now = new Date();
+            Date todayStart = startOfDay(now);
+            Date todayEnd = endOfDay(now);
+            Date trendStart = addDays(todayStart, -(days - 1));
+
+            List<DashboardOverviewVO.SalesTrendItem> trendItems = dashboardMapper.selectSalesTrend(trendStart, todayEnd);
+
+            Map<String, DashboardOverviewVO.SalesTrendItem> rawMap = new HashMap<>();
+            if (trendItems != null) {
+                for (DashboardOverviewVO.SalesTrendItem item : trendItems) {
+                    rawMap.put(item.getDate(), item);
+                }
+            }
+            java.util.ArrayList<DashboardSalesExcelVO> excelData = new java.util.ArrayList<>();
+            SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
+            for (int i = 0; i < days; i++) {
+                Date current = addDays(trendStart, i);
+                String key = dateFormat.format(current);
+                DashboardOverviewVO.SalesTrendItem item = rawMap.get(key);
+                if (item == null) {
+                    item = new DashboardOverviewVO.SalesTrendItem();
+                    item.setDate(key);
+                }
+                excelData.add(convertToExcelVO(item));
+            }
+
+            response.setContentType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+            response.setCharacterEncoding("utf-8");
+            String fileName = java.net.URLEncoder.encode("销售概览_" + System.currentTimeMillis() + ".xlsx", StandardCharsets.UTF_8).replaceAll("\\+", "%20");
+            response.setHeader("Content-Disposition", "attachment;filename=" + fileName);
+
+            EasyExcel.write(response.getOutputStream(), com.supermarket.dashboard.vo.DashboardSalesExcelVO.class)
+                    .sheet("销售趋势")
+                    .doWrite(excelData);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    private DashboardSalesExcelVO convertToExcelVO(DashboardOverviewVO.SalesTrendItem item) {
+        DashboardSalesExcelVO excelVO = new DashboardSalesExcelVO();
+        excelVO.setDate(item.getDate());
+        excelVO.setSalesAmount(item.getSalesAmount() != null ? item.getSalesAmount() : BigDecimal.ZERO);
+        excelVO.setOrderCount(item.getOrderCount() != null ? item.getOrderCount() : 0L);
+
+        if (excelVO.getOrderCount() > 0) {
+            excelVO.setAverageOrderValue(safeDivide(excelVO.getSalesAmount(), BigDecimal.valueOf(excelVO.getOrderCount())));
+        } else {
+            excelVO.setAverageOrderValue(BigDecimal.ZERO);
+        }
+        return excelVO;
     }
 }

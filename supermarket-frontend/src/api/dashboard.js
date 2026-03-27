@@ -10,3 +10,15 @@ export function getDashboardOverview(params) {
     params
   })
 }
+
+/**
+ * 导出销售概览
+ */
+export function exportDashboardSales(params) {
+  return request({
+    url: '/dashboard/export',
+    method: 'get',
+    params,
+    responseType: 'blob'
+  })
+}

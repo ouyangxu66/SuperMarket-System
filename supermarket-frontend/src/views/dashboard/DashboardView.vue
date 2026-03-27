@@ -12,6 +12,7 @@
           <el-radio-button label="30d">近30天</el-radio-button>
         </el-radio-group>
         <el-button @click="fetchOverview">刷新数据</el-button>
+        <el-button type="primary" @click="handleExport">导出销售概览Excel</el-button>
       </div>
     </div>
 
@@ -196,7 +197,7 @@
 <script setup>
 import * as echarts from 'echarts'
 import { computed, nextTick, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue'
-import { getDashboardOverview } from '@/api/dashboard'
+import { getDashboardOverview, exportDashboardSales } from '@/api/dashboard'
 import { ElMessage } from 'element-plus'
 
 const loading = ref(false)
@@ -238,15 +239,37 @@ const patchOverview = (payload = createDefaultOverview()) => {
 const fetchOverview = async () => {
   loading.value = true
   try {
-    const res = await getDashboardOverview(query)
-    patchOverview(res.data)
-    await nextTick()
-    renderSalesChart()
+    const res = await getDashboardOverview({
+      rangeType: query.rangeType,
+      topN: 10,
+      nearExpiryDays: 7
+    })
+    overview.sales = res.data.sales
+    overview.members = res.data.members
+    overview.inventory = res.data.inventory
+    overview.meta = res.data.meta
   } catch (error) {
     console.error(error)
-    ElMessage.error('获取首页看板数据失败')
   } finally {
     loading.value = false
+  }
+}
+
+const handleExport = async () => {
+  try {
+    const res = await exportDashboardSales({
+      rangeType: query.rangeType
+    })
+    const blob = new Blob([res.data], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' })
+    const link = document.createElement('a')
+    link.href = window.URL.createObjectURL(blob)
+    link.download = `销售概览_${new Date().getTime()}.xlsx`
+    link.click()
+    window.URL.revokeObjectURL(link.href)
+    ElMessage.success('导出成功')
+  } catch (error) {
+    ElMessage.error('导出失败')
+    console.error(error)
   }
 }
 

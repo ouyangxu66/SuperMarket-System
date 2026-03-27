@@ -66,7 +66,7 @@ public class SecurityConfig {
                 // 放行登录接口，允许匿名访问
                 .antMatchers("/auth/login", "/auth/register").permitAll()
                 // 放行静态资源
-                .antMatchers("/static/**", "/assets/**", "/index.html", "/favicon.ico").permitAll()
+                .antMatchers("/static/**", "/assets/**", "/index.html", "/favicon.ico", "/uploads/**").permitAll()
                 // 允许所有的 OPTIONS 请求 (解决 CORS 预检请求问题)
                 .antMatchers(HttpMethod.OPTIONS).permitAll()
                 // 其他所有请求都需要认证

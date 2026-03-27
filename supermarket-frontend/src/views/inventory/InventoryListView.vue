@@ -22,6 +22,7 @@
             <el-form-item>
               <el-button type="primary" icon="Search" @click="handleQuery">搜索</el-button>
               <el-button icon="Refresh" @click="resetQuery">重置</el-button>
+              <el-button type="warning" icon="Download" @click="handleExport">导出库存列表Excel</el-button>
             </el-form-item>
           </el-form>
         </el-card>
@@ -155,9 +156,14 @@
 
 <script setup>
 import { ref, reactive, onMounted } from 'vue'
-import {  ElMessage } from 'element-plus'
-import { getProductPage, getCategoryTree, getExpiringProducts, getExpiredProducts } from '@/api/product'
-import { getLowStockList } from '@/api/inventory'
+import {
+  getLowStockList,
+  getInventoryDetail,
+  checkLowStock,
+  exportInventory
+} from '@/api/inventory'
+import { getProductPage } from '@/api/product' // 复用商品查询接口来展示所有库存
+import { ElMessage } from 'element-plus'
 
 const activeTab = ref('all')
 const loading = ref(false)
@@ -257,7 +263,23 @@ const calculateDaysLeft = (dateStr) => {
 
 const handleQuery = () => {
   queryParams.pageNum = 1
-  getList()
+  fetchInventoryList()
+}
+
+const handleExport = async () => {
+  try {
+    const res = await exportInventory()
+    const blob = new Blob([res.data], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' })
+    const link = document.createElement('a')
+    link.href = window.URL.createObjectURL(blob)
+    link.download = `库存清单_${new Date().getTime()}.xlsx`
+    link.click()
+    window.URL.revokeObjectURL(link.href)
+    ElMessage.success('导出成功')
+  } catch (error) {
+    ElMessage.error('导出失败')
+    console.error(error)
+  }
 }
 
 const resetQuery = () => {

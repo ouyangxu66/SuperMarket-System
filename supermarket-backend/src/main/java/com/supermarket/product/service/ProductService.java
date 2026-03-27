@@ -52,4 +52,9 @@ public interface ProductService extends IService<Product> {
      * @return 已过期的商品列表
      */
     List<Product> getExpiredProducts();
+
+    /**
+     * 导出商品列表
+     */
+    void export(javax.servlet.http.HttpServletResponse response, String name, Long categoryId, Integer status);
 }

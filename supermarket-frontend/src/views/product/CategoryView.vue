@@ -78,15 +78,12 @@
 <script setup>
 import { ref, reactive, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import request from '@/utils/request'
-import { getCategoryTree } from '@/api/product'
-
-// API functions specific to Category (not in api/product.js yet, so defining inside or using request directly)
-// 建议后续移入 src/api/product.js 或 src/api/category.js
-// 这里为了快速，直接定义
-const addCategory = (data) => request({ url: '/product/category', method: 'post', data })
-const updateCategory = (data) => request({ url: '/product/category', method: 'put', data })
-const deleteCategory = (id) => request({ url: `/product/category/${id}`, method: 'delete' })
+import {
+  getCategoryTree,
+  addCategory,
+  updateCategory,
+  deleteCategory
+} from '@/api/category'
 
 /**
  * 状态定义

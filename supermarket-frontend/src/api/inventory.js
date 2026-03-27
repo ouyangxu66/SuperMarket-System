@@ -29,6 +29,17 @@ export function getInventoryDetail(id) {
 }
 
 /**
+ * 导出库存清单
+ */
+export function exportInventory() {
+  return request({
+    url: '/inventory/export',
+    method: 'get',
+    responseType: 'blob'
+  })
+}
+
+/**
  * 库存盘点模块
  */
 

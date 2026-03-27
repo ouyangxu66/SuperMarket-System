@@ -157,4 +157,19 @@ public class ProductController {
         java.util.List<Product> expiredProducts = productService.getExpiredProducts();
         return Result.success(expiredProducts);
     }
+
+    /**
+     * 导出商品
+     * @param response
+     * @param name
+     * @param categoryId
+     * @param status
+     */
+    @GetMapping("/export")
+    public void export(javax.servlet.http.HttpServletResponse response,
+                       @RequestParam(required = false) String name,
+                       @RequestParam(required = false) Long categoryId,
+                       @RequestParam(required = false) Integer status) {
+        productService.export(response, name, categoryId, status);
+    }
 }

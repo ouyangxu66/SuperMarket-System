@@ -4,8 +4,10 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.supermarket.inventory.service.InventoryService;
 import com.supermarket.product.entity.Product;
 import com.supermarket.product.service.ProductService;
+import com.alibaba.excel.EasyExcel;
 import org.springframework.stereotype.Service;
 
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 
 /**
@@ -55,5 +57,41 @@ public class InventoryServiceImpl implements InventoryService {
     @Override
     public Product getInventoryDetail(Long productId) {
         return productService.getById(productId);
+    }
+
+    @Override
+    public void export(javax.servlet.http.HttpServletResponse response) {
+        try {
+            // 查询所有状态正常且未删除的商品库存
+            LambdaQueryWrapper<Product> wrapper = new LambdaQueryWrapper<>();
+            wrapper.eq(Product::getStatus, 1)  // 状态正常（上架）
+                   .eq(Product::getDeleted, 0) // 未删除
+                   .orderByAsc(Product::getStock); // 按库存数量升序排列
+
+            List<Product> list = productService.list(wrapper);
+
+            List<com.supermarket.inventory.vo.InventoryExcelVO> excelList = new java.util.ArrayList<>();
+            for (Product product : list) {
+                com.supermarket.inventory.vo.InventoryExcelVO vo = new com.supermarket.inventory.vo.InventoryExcelVO();
+                vo.setProductName(product.getName());
+                vo.setBarcode(product.getBarcode());
+                vo.setStock(product.getStock());
+                vo.setLowStockThreshold(product.getLowStockThreshold());
+                vo.setShelfLifeDays(product.getShelfLifeDays());
+                excelList.add(vo);
+            }
+
+            response.setContentType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+            response.setCharacterEncoding("utf-8");
+            String fileName = java.net.URLEncoder.encode("库存清单_" + System.currentTimeMillis() + ".xlsx", StandardCharsets.UTF_8).replaceAll("\\+", "%20");
+            response.setHeader("Content-Disposition", "attachment;filename=" + fileName);
+
+            EasyExcel.write(response.getOutputStream(), com.supermarket.inventory.vo.InventoryExcelVO.class)
+                    .sheet("库存清单")
+                    .doWrite(excelList);
+
+        } catch (Exception e) {
+            throw new RuntimeException("导出Excel失败", e);
+        }
     }
 }

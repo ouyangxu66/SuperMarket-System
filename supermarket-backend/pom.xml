@@ -76,6 +76,13 @@
             <artifactId>commons-lang3</artifactId>
         </dependency>
 
+        <!-- EasyExcel 用于文件导出 -->
+        <dependency>
+            <groupId>com.alibaba</groupId>
+            <artifactId>easyexcel</artifactId>
+            <version>3.3.4</version>
+        </dependency>
+
         <!-- 7. 单元测试 -->
         <dependency>
             <groupId>org.springframework.boot</groupId>

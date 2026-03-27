@@ -42,6 +42,7 @@ CREATE TABLE `product` (
                            `name` varchar(128) NOT NULL COMMENT '商品名称',
                            `spec` varchar(64) DEFAULT NULL COMMENT '规格 (如: 500ml, 1kg)',
                            `unit` varchar(32) DEFAULT '个' COMMENT '计量单位 (如: 瓶, 包, 箱)',
+                           `image_url` varchar(255) DEFAULT '' COMMENT '商品图片URL',
 
                            `price` decimal(10,2) NOT NULL DEFAULT 0.00 COMMENT '销售价格 (元)',
                            `cost_price` decimal(10,2) NOT NULL DEFAULT 0.00 COMMENT '进货价格 (元, 用于计算毛利)',
