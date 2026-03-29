@@ -8,6 +8,9 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import javax.servlet.http.HttpServletResponse;
+import java.io.IOException;
+
 @RestController
 @RequestMapping("/dashboard")
 public class DashboardController {
@@ -25,9 +28,16 @@ public class DashboardController {
         return Result.success(dashboardService.getOverview(rangeType, topN, nearExpiryDays));
     }
 
-    @GetMapping("/export")
-    public void export(@RequestParam(required = false, defaultValue = "7d") String rangeType,
-                       javax.servlet.http.HttpServletResponse response) {
+    @GetMapping("/export-sales")
+    public void exportSales(HttpServletResponse response,
+                          @RequestParam(defaultValue = "7d") String rangeType) {
         dashboardService.exportSales(response, rangeType);
+    }
+
+    @GetMapping("/export-hot-products")
+    public void exportHotProducts(HttpServletResponse response,
+                                  @RequestParam(defaultValue = "7d") String rangeType,
+                                  @RequestParam(defaultValue = "100") Integer limit) throws IOException {
+        dashboardService.exportHotProducts(rangeType, limit, response);
     }
 }

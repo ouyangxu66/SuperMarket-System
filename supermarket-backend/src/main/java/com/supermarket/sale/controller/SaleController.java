@@ -11,6 +11,8 @@ import com.supermarket.sale.entity.SaleOrder;
 import com.supermarket.sale.mapper.SaleDetailMapper;
 import com.supermarket.sale.service.SaleService;
 import com.supermarket.sale.vo.SaleOrderExcelVO;
+import com.supermarket.sale.vo.ProductSaleRecordVO;
+import com.supermarket.sale.vo.ProductSaleSummaryVO;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.util.StringUtils;
@@ -95,13 +97,12 @@ public class SaleController {
      * GET /api/sale/export
      */
     @GetMapping("/export")
-    public void export(
+    public void exportSale(HttpServletResponse response,
             @RequestParam(required = false) String orderNo,
             @RequestParam(required = false) String memberName,
             @RequestParam(required = false) Integer paymentType,
             @RequestParam(required = false) Long startTime,
-            @RequestParam(required = false) Long endTime,
-            HttpServletResponse response) {
+            @RequestParam(required = false) Long endTime) {
 
         try {
             response.setContentType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
@@ -153,7 +154,94 @@ public class SaleController {
                     .doWrite(excelList);
 
         } catch (Exception e) {
-            logger.error("导出销售流水失败", e);
+            logger.error("导出销售流水异常", e);
+        }
+    }
+
+    /**
+     * 分页查询商品销售记录明细
+     * GET /api/sale/product/page
+     */
+    @GetMapping("/product/page")
+    public Result<IPage<ProductSaleRecordVO>> getProductSalePage(@RequestParam(defaultValue = "1") Integer pageNum,
+                                                                 @RequestParam(defaultValue = "10") Integer pageSize,
+                                                                 @RequestParam(required = false) String productName,
+                                                                 @RequestParam(required = false) Long startTime,
+                                                                 @RequestParam(required = false) Long endTime) {
+        Page<ProductSaleRecordVO> page = new Page<>(pageNum, pageSize);
+        Date start = startTime != null ? new Date(startTime) : null;
+        Date end = endTime != null ? new Date(endTime) : null;
+        IPage<ProductSaleRecordVO> result = saleDetailMapper.selectProductSaleRecords(page, productName, start, end);
+        return Result.success(result);
+    }
+
+    /**
+     * 导出所有商品销售记录
+     * GET /api/sale/product/export
+     */
+    @GetMapping("/product/export")
+    public void exportProductSale(HttpServletResponse response,
+                                  @RequestParam(required = false) String productName,
+                                  @RequestParam(required = false) Long startTime,
+                                  @RequestParam(required = false) Long endTime) {
+        try {
+            Date start = startTime != null ? new Date(startTime) : null;
+            Date end = endTime != null ? new Date(endTime) : null;
+
+            List<ProductSaleRecordVO> list = saleDetailMapper.selectProductSaleRecords(productName, start, end);
+
+            response.setContentType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+            response.setCharacterEncoding("utf-8");
+            String fileName = java.net.URLEncoder.encode("商品销售明细表_" + System.currentTimeMillis() + ".xlsx", StandardCharsets.UTF_8.toString());
+            response.setHeader("Content-Disposition", "attachment;filename=" + fileName);
+
+            EasyExcel.write(response.getOutputStream(), ProductSaleRecordVO.class)
+                    .sheet("商品销售明细")
+                    .doWrite(list);
+        } catch (Exception e) {
+            logger.error("导出商品销售明细异常", e);
+        }
+    }
+
+    /**
+     * 导出商品销售总计
+     * GET /api/sale/product/export-summary
+     */
+    @GetMapping("/product/export-summary")
+    public void exportProductSaleSummary(HttpServletResponse response,
+                                         @RequestParam(required = false) String productName,
+                                         @RequestParam(required = false) Long startTime,
+                                         @RequestParam(required = false) Long endTime) {
+        try {
+            Date start = startTime != null ? new Date(startTime) : null;
+            Date end = endTime != null ? new Date(endTime) : null;
+
+            List<ProductSaleSummaryVO> list = saleDetailMapper.selectProductSaleSummary(productName, start, end);
+
+            // 增加合计行
+            if (list != null && !list.isEmpty()) {
+                long totalQuantity = list.stream().mapToLong(vo -> vo.getTotalQuantity() != null ? vo.getTotalQuantity() : 0L).sum();
+                java.math.BigDecimal totalAmount = list.stream()
+                        .map(vo -> vo.getTotalAmount() != null ? vo.getTotalAmount() : java.math.BigDecimal.ZERO)
+                        .reduce(java.math.BigDecimal.ZERO, java.math.BigDecimal::add);
+
+                ProductSaleSummaryVO totalRow = new ProductSaleSummaryVO();
+                totalRow.setProductName("总计");
+                totalRow.setTotalQuantity((int) totalQuantity);
+                totalRow.setTotalAmount(totalAmount);
+                list.add(totalRow);
+            }
+
+            response.setContentType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+            response.setCharacterEncoding("utf-8");
+            String fileName = java.net.URLEncoder.encode("商品销售总计表_" + System.currentTimeMillis() + ".xlsx", StandardCharsets.UTF_8.toString());
+            response.setHeader("Content-Disposition", "attachment;filename=" + fileName);
+
+            EasyExcel.write(response.getOutputStream(), ProductSaleSummaryVO.class)
+                    .sheet("商品销售总计")
+                    .doWrite(list);
+        } catch (Exception e) {
+            logger.error("导出商品销售总计异常", e);
         }
     }
 }

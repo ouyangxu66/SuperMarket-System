@@ -24,6 +24,7 @@ const router = createRouter({
       name: 'home',
       component: () => import('../views/HomeView.vue'),
       redirect: '/dashboard',
+      meta: { requiresAuth: true },
       children: [
         {
           path: '/dashboard',
@@ -98,6 +99,31 @@ const router = createRouter({
       ]
     }
   ]
+})
+
+// 全局前置路由守卫
+router.beforeEach((to, from, next) => {
+  // 获取本地存储的 token
+  const token = localStorage.getItem('token')
+
+  // 检查路由是否需要登录
+  if (to.matched.some(record => record.meta.requiresAuth)) {
+    if (!token) {
+      // 未登录，重定向到登录页
+      next({ path: '/login', query: { redirect: to.fullPath } })
+    } else {
+      // 已登录，正常放行
+      next()
+    }
+  } else {
+    // 如果是前往登录页，且已经有 token，跳转到首页
+    if (to.path === '/login' && token) {
+      next('/')
+    } else {
+      // 不需要登录的页面，直接放行
+      next()
+    }
+  }
 })
 
 export default router

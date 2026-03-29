@@ -4,21 +4,31 @@ import com.supermarket.dashboard.mapper.DashboardMapper;
 import com.supermarket.dashboard.service.DashboardService;
 import com.supermarket.dashboard.vo.DashboardOverviewVO;
 import com.supermarket.dashboard.vo.DashboardSalesExcelVO;
+import com.supermarket.dashboard.vo.DashboardHotProductExcelVO;
 import com.alibaba.excel.EasyExcel;
 import org.springframework.stereotype.Service;
 
+import javax.servlet.http.HttpServletResponse;
+import java.io.IOException;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.text.SimpleDateFormat;
+import java.time.LocalDateTime;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @Service
 public class DashboardServiceImpl implements DashboardService {
+
+    private static final Logger log = LoggerFactory.getLogger(DashboardServiceImpl.class);
 
     private final DashboardMapper dashboardMapper;
 
@@ -216,7 +226,7 @@ public class DashboardServiceImpl implements DashboardService {
     }
 
     @Override
-    public void exportSales(javax.servlet.http.HttpServletResponse response, String rangeType) {
+    public void exportSales(HttpServletResponse response, String rangeType) {
         try {
             int days = resolveRangeDays(rangeType);
             Date now = new Date();
@@ -250,11 +260,55 @@ public class DashboardServiceImpl implements DashboardService {
             String fileName = java.net.URLEncoder.encode("销售概览_" + System.currentTimeMillis() + ".xlsx", StandardCharsets.UTF_8).replaceAll("\\+", "%20");
             response.setHeader("Content-Disposition", "attachment;filename=" + fileName);
 
-            EasyExcel.write(response.getOutputStream(), com.supermarket.dashboard.vo.DashboardSalesExcelVO.class)
-                    .sheet("销售趋势")
+            // Write to stream
+            EasyExcel.write(response.getOutputStream(), DashboardSalesExcelVO.class)
+                    .sheet("销售趋势统计")
                     .doWrite(excelData);
+
+        } catch (IOException e) {
+            log.error("Failed to export sales dashboard data", e);
+            throw new RuntimeException("导出数据失败");
+        }
+    }
+
+    @Override
+    public void exportHotProducts(String rangeType, Integer limit, HttpServletResponse response) throws IOException {
+        try {
+            // 设置响应头
+            response.setContentType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+            response.setCharacterEncoding("utf-8");
+            String fileName = URLEncoder.encode("热销商品排行统计_" + System.currentTimeMillis() + ".xlsx", StandardCharsets.UTF_8.toString());
+            response.setHeader("Content-Disposition", "attachment;filename=" + fileName);
+
+            // 获取时间范围
+            int days = resolveRangeDays(rangeType);
+            Date now = new Date();
+            Date todayStart = startOfDay(now);
+            Date todayEnd = endOfDay(now);
+            Date trendStart = addDays(todayStart, -(days - 1));
+
+            // 获取数据，默认导出前 100 条
+            int topN = (limit != null && limit > 0) ? limit : 100;
+            List<DashboardOverviewVO.HotProductItem> hotProducts = dashboardMapper.selectHotProducts(trendStart, todayEnd, topN);
+            
+            // 转换为 ExcelVO
+            List<DashboardHotProductExcelVO> excelList = hotProducts.stream().map(item -> {
+                DashboardHotProductExcelVO vo = new DashboardHotProductExcelVO();
+                vo.setProductName(item.getProductName());
+                vo.setBarcode(item.getBarcode());
+                vo.setSalesQuantity(item.getSalesQuantity() != null ? item.getSalesQuantity().intValue() : 0);
+                vo.setSalesAmount(item.getSalesAmount() != null ? item.getSalesAmount() : BigDecimal.ZERO);
+                return vo;
+            }).collect(Collectors.toList());
+
+            // 写入Excel
+            EasyExcel.write(response.getOutputStream(), DashboardHotProductExcelVO.class)
+                    .sheet("热销商品排行")
+                    .doWrite(excelList);
+
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("导出热销商品排行Excel失败", e);
+            throw new RuntimeException("导出热销商品排行失败", e);
         }
     }
 

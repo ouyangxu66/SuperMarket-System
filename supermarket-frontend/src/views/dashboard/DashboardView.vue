@@ -112,17 +112,19 @@
       <el-col :xs="24" :lg="8">
         <el-card shadow="never" class="chart-card">
           <template #header>
-            <div class="card-header"><span>热销商品排行</span><span>Top {{ hotProducts.length }}</span></div>
-          </template>
-          <div v-if="hotProducts.length" class="rank-list">
-            <div v-for="(item, index) in hotProducts" :key="item.productId || index" class="rank-item">
-              <div class="rank-index">{{ index + 1 }}</div>
-              <div class="rank-main">
-                <div class="rank-name">{{ item.productName }}</div>
-                <div class="rank-meta">销量 {{ formatNumber(item.salesQuantity) }} · 销售额 {{ formatCurrency(item.salesAmount) }}</div>
-              </div>
+            <div class="card-header">
+              <span>热销商品排行 (Top {{ query.topN }})</span>
+              <el-button type="primary" link @click="handleExportHotProducts" :loading="exportingHot">
+                <el-icon><Download /></el-icon>导出
+              </el-button>
             </div>
-          </div>
+          </template>
+          <el-table v-if="hotProducts.length > 0" :data="hotProducts" style="width: 100%" height="320">
+            <el-table-column type="index" label="#" width="60" />
+            <el-table-column prop="productName" label="商品" min-width="140" />
+            <el-table-column prop="salesQuantity" label="销量" width="100" />
+            <el-table-column prop="salesAmount" label="销售额" width="100" />
+          </el-table>
           <el-empty v-else description="暂无销售排行数据" :image-size="100" />
         </el-card>
       </el-col>
@@ -162,7 +164,7 @@
     </el-row>
 
     <el-row :gutter="20" class="section-gap bottom-gap">
-      <el-col :xs="24" :lg="12">
+      <el-col :xs="24" :lg="24">
         <el-card shadow="never" class="status-card">
           <template #header>
             <div class="card-header"><span>支付方式分布</span><span>{{ paymentDistribution.length }} 种</span></div>
@@ -179,26 +181,16 @@
           <el-empty v-else description="暂无支付方式数据" :image-size="90" />
         </el-card>
       </el-col>
-      <el-col :xs="24" :lg="12">
-        <el-card shadow="never" class="status-card">
-          <template #header>
-            <div class="card-header"><span>会员扩展统计</span><span>{{ overview.members.levelDistribution.ready ? '已开放' : '预留中' }}</span></div>
-          </template>
-          <div class="placeholder-panel">
-            <el-tag type="warning" effect="dark">待扩展</el-tag>
-            <p>{{ overview.members.levelDistribution.pendingReason || '会员等级与精细化画像能力将在后续迭代中接入。' }}</p>
-          </div>
-        </el-card>
-      </el-col>
     </el-row>
   </div>
 </template>
 
 <script setup>
-import * as echarts from 'echarts'
-import { computed, nextTick, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue'
-import { getDashboardOverview, exportDashboardSales } from '@/api/dashboard'
+import { ref, reactive, computed, watch, onMounted, onBeforeUnmount, nextTick } from 'vue'
+import { getDashboardOverview, exportDashboardSales, exportDashboardHotProducts } from '@/api/dashboard'
+import { Download } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
+import * as echarts from 'echarts'
 
 const loading = ref(false)
 const salesChartRef = ref(null)
@@ -270,6 +262,37 @@ const handleExport = async () => {
   } catch (error) {
     ElMessage.error('导出失败')
     console.error(error)
+  }
+}
+
+const exporting = ref(false)
+const exportingHot = ref(false)
+
+const handleExportHotProducts = async () => {
+  if (exportingHot.value) return
+
+  exportingHot.value = true
+  try {
+    const res = await exportDashboardHotProducts({
+      rangeType: query.rangeType,
+      limit: 100 // 默认导出前100个
+    })
+
+    // Create blob link to download
+    const url = window.URL.createObjectURL(new Blob([res.data], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' }))
+    const link = document.createElement('a')
+    link.href = url
+    link.setAttribute('download', `热销商品排行统计_${new Date().getTime()}.xlsx`)
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+
+    ElMessage.success('导出成功')
+  } catch (error) {
+    console.error('Export failed:', error)
+    ElMessage.error('导出失败，请重试')
+  } finally {
+    exportingHot.value = false
   }
 }
 

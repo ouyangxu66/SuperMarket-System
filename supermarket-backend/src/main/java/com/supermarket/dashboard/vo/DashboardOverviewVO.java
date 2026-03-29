@@ -265,6 +265,7 @@ public class DashboardOverviewVO {
     public static class HotProductItem {
         private Long productId;
         private String productName;
+        private String barcode;
         private Long salesQuantity = 0L;
         private java.math.BigDecimal salesAmount = java.math.BigDecimal.ZERO;
 
@@ -282,6 +283,14 @@ public class DashboardOverviewVO {
 
         public void setProductName(String productName) {
             this.productName = productName;
+        }
+
+        public String getBarcode() {
+            return barcode;
+        }
+
+        public void setBarcode(String barcode) {
+            this.barcode = barcode;
         }
 
         public Long getSalesQuantity() {

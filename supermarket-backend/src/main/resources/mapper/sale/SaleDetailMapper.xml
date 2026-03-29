@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.supermarket.sale.mapper.SaleDetailMapper">
+
+    <select id="selectProductSaleRecords" resultType="com.supermarket.sale.vo.ProductSaleRecordVO">
+        SELECT
+            sd.product_name AS productName,
+            so.order_no AS orderNo,
+            sd.price AS price,
+            sd.quantity AS quantity,
+            sd.amount AS amount,
+            so.member_name AS memberName,
+            so.create_time AS createTime
+        FROM sale_detail sd
+        INNER JOIN sale_order so ON sd.order_id = so.id
+        WHERE so.is_deleted = 0
+        <if test="productName != null and productName != ''">
+            AND sd.product_name LIKE CONCAT('%', #{productName}, '%')
+        </if>
+        <if test="startTime != null">
+            AND so.create_time <![CDATA[>=]]> #{startTime}
+        </if>
+        <if test="endTime != null">
+            AND so.create_time <![CDATA[<=]]> #{endTime}
+        </if>
+        ORDER BY so.create_time DESC
+    </select>
+
+    <select id="selectProductSaleSummary" resultType="com.supermarket.sale.vo.ProductSaleSummaryVO">
+        SELECT
+            sd.product_name AS productName,
+            MAX(sd.price) AS price,
+            SUM(sd.quantity) AS totalQuantity,
+            SUM(sd.amount) AS totalAmount
+        FROM sale_detail sd
+        INNER JOIN sale_order so ON sd.order_id = so.id
+        WHERE so.is_deleted = 0 AND so.status = 1
+        <if test="productName != null and productName != ''">
+            AND sd.product_name LIKE CONCAT('%', #{productName}, '%')
+        </if>
+        <if test="startTime != null">
+            AND so.create_time <![CDATA[>=]]> #{startTime}
+        </if>
+        <if test="endTime != null">
+            AND so.create_time <![CDATA[<=]]> #{endTime}
+        </if>
+        GROUP BY sd.product_id, sd.product_name
+        ORDER BY totalAmount DESC
+    </select>
+</mapper>

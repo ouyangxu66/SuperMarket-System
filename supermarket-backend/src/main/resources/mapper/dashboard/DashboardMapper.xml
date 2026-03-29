@@ -30,10 +30,12 @@
     <select id="selectHotProducts" resultType="com.supermarket.dashboard.vo.DashboardOverviewVO$HotProductItem">
         SELECT sd.product_id AS productId,
                MAX(sd.product_name) AS productName,
+               MAX(p.barcode) AS barcode,
                COALESCE(SUM(sd.quantity), 0) AS salesQuantity,
                COALESCE(SUM(sd.amount), 0) AS salesAmount
         FROM sale_detail sd
                  INNER JOIN sale_order so ON so.id = sd.order_id
+                 LEFT JOIN product p ON sd.product_id = p.id
         WHERE so.is_deleted = 0
           AND so.status = 1
           AND so.create_time <![CDATA[>=]]> #{startTime}

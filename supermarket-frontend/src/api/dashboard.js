@@ -16,7 +16,19 @@ export function getDashboardOverview(params) {
  */
 export function exportDashboardSales(params) {
   return request({
-    url: '/dashboard/export',
+    url: '/dashboard/export-sales',
+    method: 'get',
+    params,
+    responseType: 'blob'
+  })
+}
+
+/**
+ * 导出热销商品排行统计
+ */
+export function exportDashboardHotProducts(params) {
+  return request({
+    url: '/dashboard/export-hot-products',
     method: 'get',
     params,
     responseType: 'blob'
