@@ -115,3 +115,31 @@ export function exportProducts(query) {
     responseType: 'blob'
   })
 }
+
+/**
+ * 下载商品导入模板
+ * @returns {Promise}
+ */
+export function downloadImportTemplate() {
+  return request({
+    url: '/product/import-template',
+    method: 'get',
+    responseType: 'blob'
+  })
+}
+
+/**
+ * 批量导入商品
+ * @param {FormData} data - 包含Excel文件的FormData对象
+ * @returns {Promise}
+ */
+export function importProduct(data) {
+  return request({
+    url: '/product/import',
+    method: 'post',
+    data,
+    headers: {
+      'Content-Type': 'multipart/form-data'
+    }
+  })
+}

@@ -22,7 +22,8 @@ public class ProductFormDTO implements Serializable {
     private Integer lowStockThreshold;  // 库存预警阈值
     private Integer status;             // 状态 (1:上架, 0:下架)
     private String remark;              // 备注
-    
+    private String imageUrl;            // 商品图片
+
     // 新增过期日期相关字段
     private Date latestProductionDate;  // 最新生产日期
     private Integer shelfLifeDays;      // 保质期天数
@@ -48,6 +49,9 @@ public class ProductFormDTO implements Serializable {
     public void setStock(Integer stock) { this.stock = stock; }
     public Integer getLowStockThreshold() { return lowStockThreshold; }
     public void setLowStockThreshold(Integer lowStockThreshold) { this.lowStockThreshold = lowStockThreshold; }
+    public String getImageUrl() { return imageUrl; }
+    public void setImageUrl(String imageUrl) { this.imageUrl = imageUrl; }
+
     public Integer getStatus() { return status; }
     public void setStatus(Integer status) { this.status = status; }
     public String getRemark() { return remark; }

@@ -62,6 +62,11 @@
                  </el-popover>
                </template>
             </el-table-column>
+            <el-table-column label="操作" width="120" align="center">
+              <template #default="scope">
+                <el-button type="primary" link @click="handleReplenish(scope.row)">补货</el-button>
+              </template>
+            </el-table-column>
           </el-table>
 
           <div class="pagination-container">
@@ -151,6 +156,31 @@
         </el-card>
       </el-tab-pane>
     </el-tabs>
+
+    <!-- 补货弹窗 -->
+    <el-dialog
+      title="库存补货"
+      v-model="replenishDialog.visible"
+      width="400px"
+    >
+      <el-form :model="replenishForm" label-width="80px">
+        <el-form-item label="商品名称">
+          <el-input v-model="replenishForm.name" disabled />
+        </el-form-item>
+        <el-form-item label="当前库存">
+          <el-input v-model="replenishForm.stock" disabled />
+        </el-form-item>
+        <el-form-item label="补货数量">
+          <el-input-number v-model="replenishForm.addStock" :min="1" style="width: 100%" />
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <div class="dialog-footer">
+          <el-button @click="replenishDialog.visible = false">取消</el-button>
+          <el-button type="primary" @click="submitReplenish" :loading="replenishLoading">确定</el-button>
+        </div>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
@@ -158,11 +188,9 @@
 import { ref, reactive, onMounted } from 'vue'
 import {
   getLowStockList,
-  getInventoryDetail,
-  checkLowStock,
   exportInventory
 } from '@/api/inventory'
-import { getProductPage } from '@/api/product' // 复用商品查询接口来展示所有库存
+import { getProductPage, updateProduct } from '@/api/product' // 复用商品查询接口来展示所有库存
 import { ElMessage } from 'element-plus'
 
 const activeTab = ref('all')
@@ -174,6 +202,45 @@ const expiredList = ref([])
 const categoryOptions = ref([])
 const total = ref(0)
 const expiringDays = ref(30) // 默认查询 30 天临期
+
+const replenishDialog = reactive({
+  visible: false
+})
+const replenishForm = reactive({
+  id: null,
+  name: '',
+  stock: 0,
+  addStock: 1,
+  rowInfo: null
+})
+const replenishLoading = ref(false)
+
+const handleReplenish = (row) => {
+  replenishForm.id = row.id
+  replenishForm.name = row.name
+  replenishForm.stock = row.stock
+  replenishForm.addStock = 1
+  replenishForm.rowInfo = row
+  replenishDialog.visible = true
+}
+
+const submitReplenish = async () => {
+  replenishLoading.value = true
+  try {
+    const updateData = { ...replenishForm.rowInfo }
+    updateData.stock = replenishForm.stock + replenishForm.addStock
+    await updateProduct(updateData)
+    ElMessage.success('补货成功')
+    replenishDialog.visible = false
+    // 刷新数据
+    if (activeTab.value === 'all') getList()
+    getLowStock()
+  } catch (error) {
+    console.error(error)
+  } finally {
+    replenishLoading.value = false
+  }
+}
 
 const queryParams = reactive({
   pageNum: 1,

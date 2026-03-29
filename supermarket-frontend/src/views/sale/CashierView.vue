@@ -74,7 +74,7 @@
 
           <el-form :inline="true" class="member-search-form">
             <el-form-item>
-              <el-input v-model="memberKeyword" placeholder="请输入手机号/卡号/会员编号" clearable @keyup.enter="searchMember" />
+              <el-input v-model="memberKeyword" placeholder="请输入手机号/姓名" clearable @keyup.enter="searchMember" />
             </el-form-item>
             <el-form-item>
               <el-button type="primary" @click="searchMember">查询会员</el-button>
@@ -98,21 +98,39 @@
             </div>
           </template>
 
-          <el-form :model="checkoutForm" label-width="88px">
+          <el-form :model="checkoutForm" label-width="100px">
+            <el-form-item label="应收金额">
+              <span class="amount-text">¥ {{ totalAmount.toFixed(2) }}</span>
+            </el-form-item>
+
+            <el-form-item label="积分抵扣" v-if="selectedMember">
+              <div style="display: flex; flex-direction: column; width: 100%;">
+                <el-checkbox v-model="checkoutForm.usePoints" @change="handlePointsChange" :disabled="maxDeductiblePoints < 100">
+                  使用积分抵扣 (当前积分: {{ selectedMember.points }})
+                </el-checkbox>
+                <div v-if="checkoutForm.usePoints" style="margin-top: 10px;">
+                  <el-input-number
+                    v-model="checkoutForm.usedPoints"
+                    :min="maxDeductiblePoints >= 100 ? 100 : 0"
+                    :max="maxDeductiblePoints"
+                    :step="100"
+                    style="width: 150px"
+                    @change="handlePointsChange"
+                  />
+                  <span style="margin-left: 10px; color: #f56c6c;">抵扣金额: ¥{{ pointDeductAmount.toFixed(2) }}</span>
+                </div>
+              </div>
+            </el-form-item>
+
+            <el-form-item label="实收金额">
+              <el-input-number v-model="checkoutForm.realPayAmount" :min="0" :precision="2" :step="0.1" style="width: 150px;" />
+            </el-form-item>
             <el-form-item label="支付方式">
               <el-radio-group v-model="checkoutForm.paymentType">
-                <el-radio :label="1">现金</el-radio>
-                <el-radio :label="2">微信</el-radio>
-                <el-radio :label="3">支付宝</el-radio>
+                <el-radio :value="1">现金</el-radio>
+                <el-radio :value="2">微信</el-radio>
+                <el-radio :value="3">支付宝</el-radio>
               </el-radio-group>
-            </el-form-item>
-            <el-form-item label="应收金额">
-              <el-input :model-value="totalAmount.toFixed(2)" disabled>
-                <template #prepend>¥</template>
-              </el-input>
-            </el-form-item>
-            <el-form-item label="实收金额">
-              <el-input-number v-model="checkoutForm.realPayAmount" :min="0" :precision="2" :step="1" style="width: 100%" />
             </el-form-item>
             <el-form-item label="订单备注">
               <el-input v-model="checkoutForm.remark" type="textarea" :rows="3" placeholder="请输入备注" />
@@ -149,7 +167,7 @@
 </template>
 
 <script setup>
-import { computed, onMounted, reactive, ref } from 'vue'
+import { computed, onMounted, reactive, ref, watch } from 'vue'
 import { ElMessage } from 'element-plus'
 import { getProductPage } from '@/api/product'
 import { getSimpleMember } from '@/api/member'
@@ -173,11 +191,49 @@ const productQuery = reactive({
 const checkoutForm = reactive({
   paymentType: 1,
   realPayAmount: 0,
-  remark: ''
+  remark: '',
+  usePoints: false,
+  usedPoints: 0
 })
 
-const totalAmount = computed(() => cartList.value.reduce((sum, item) => sum + calcItemAmount(item), 0))
-const totalQuantity = computed(() => cartList.value.reduce((sum, item) => sum + Number(item.quantity || 0), 0))
+const totalAmount = computed(() => {
+  return cartList.value.reduce((sum, item) => sum + calcItemAmount(item), 0)
+})
+
+const totalQuantity = computed(() => {
+  return cartList.value.reduce((sum, item) => sum + Number(item.quantity || 0), 0)
+})
+
+const maxDeductiblePoints = computed(() => {
+  if (!selectedMember.value) return 0
+  const maxPointsByAmount = Math.floor(totalAmount.value) * 100
+  return Math.min(selectedMember.value.points || 0, maxPointsByAmount)
+})
+
+const pointDeductAmount = computed(() => {
+  return Math.floor(checkoutForm.usedPoints / 100)
+})
+
+const handlePointsChange = () => {
+  if (checkoutForm.usePoints) {
+    let newPoints = checkoutForm.usedPoints
+    if (!newPoints || newPoints < 100) {
+       newPoints = 100
+    }
+    if (newPoints > maxDeductiblePoints.value) {
+       newPoints = maxDeductiblePoints.value
+    }
+    newPoints -= newPoints % 100
+
+    if (newPoints < 0) newPoints = 0
+
+    checkoutForm.usedPoints = newPoints
+    checkoutForm.realPayAmount = Math.max(0, Number((totalAmount.value - (newPoints / 100)).toFixed(2)))
+  } else {
+    checkoutForm.usedPoints = 0
+    checkoutForm.realPayAmount = Number(totalAmount.value.toFixed(2))
+  }
+}
 
 onMounted(() => {
   fetchProductList()
@@ -219,37 +275,47 @@ const addToCart = (product) => {
 
 const removeCartItem = (index) => {
   cartList.value.splice(index, 1)
-  syncRealPayAmount()
 }
 
 const refreshCart = () => {
   syncRealPayAmount()
 }
 
-const clearCart = (clearResult = false) => {
+const clearCart = (showAlert = true) => {
   cartList.value = []
-  checkoutForm.realPayAmount = 0
-  if (clearResult) {
-    lastOrderNo.value = ''
+  syncRealPayAmount()
+  if (showAlert !== false) {
+    ElMessage.success('已清空购物车')
   }
 }
 
 const calcItemAmount = (item) => Number(item.price || 0) * Number(item.quantity || 0)
 
 const syncRealPayAmount = () => {
-  checkoutForm.realPayAmount = Number(totalAmount.value.toFixed(2))
+  if (checkoutForm.usePoints) {
+    if (checkoutForm.usedPoints > maxDeductiblePoints.value) {
+       checkoutForm.usedPoints = maxDeductiblePoints.value - (maxDeductiblePoints.value % 100)
+    }
+    checkoutForm.realPayAmount = Math.max(0, Number((totalAmount.value - checkoutForm.usedPoints / 100).toFixed(2)))
+  } else {
+    checkoutForm.realPayAmount = Number(totalAmount.value.toFixed(2))
+  }
 }
+
+watch(totalAmount, (newVal) => {
+  syncRealPayAmount()
+})
 
 const searchMember = async () => {
   const keyword = memberKeyword.value.trim()
   if (!keyword) {
-    ElMessage.warning('请输入会员手机号、卡号或会员编号')
+    ElMessage.warning('请输入手机号或姓名')
     return
   }
   try {
     const params = /^1\d{10}$/.test(keyword)
       ? { phone: keyword }
-      : { cardNo: keyword, memberNo: keyword }
+      : { name: keyword }
     const res = await getSimpleMember(params)
     selectedMember.value = res.data
     ElMessage.success('会员绑定成功')
@@ -262,6 +328,9 @@ const searchMember = async () => {
 const clearMember = () => {
   memberKeyword.value = ''
   selectedMember.value = null
+  checkoutForm.usePoints = false
+  checkoutForm.usedPoints = 0
+  syncRealPayAmount()
 }
 
 const submitCheckout = async () => {
@@ -277,9 +346,8 @@ const submitCheckout = async () => {
   checkoutLoading.value = true
   try {
     const payload = {
-      paymentType: checkoutForm.paymentType,
-      realPayAmount: Number(checkoutForm.realPayAmount),
-      memberId: selectedMember.value?.id,
+      ...checkoutForm,
+      memberId: selectedMember.value?.id || null,
       remark: checkoutForm.remark?.trim() || '',
       items: cartList.value.map(item => ({
         productId: item.id,
@@ -354,5 +422,11 @@ const submitCheckout = async () => {
 
 .member-search-form {
   margin-bottom: 12px;
+}
+
+.amount-text {
+  font-size: 18px;
+  font-weight: 500;
+  color: #333;
 }
 </style>

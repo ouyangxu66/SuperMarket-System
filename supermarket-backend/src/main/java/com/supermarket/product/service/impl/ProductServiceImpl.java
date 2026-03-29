@@ -12,7 +12,9 @@ import com.supermarket.product.mapper.ProductCategoryMapper;
 import com.supermarket.product.mapper.ProductMapper;
 import com.supermarket.product.service.ProductService;
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
 
+import javax.servlet.http.HttpServletResponse;
 import java.nio.charset.StandardCharsets;
 import java.util.Calendar;
 import java.util.Date;
@@ -98,6 +100,7 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product> impl
         product.setLowStockThreshold(dto.getLowStockThreshold());
         product.setStatus(dto.getStatus() != null ? dto.getStatus() : 1);
         product.setRemark(dto.getRemark());
+        product.setImageUrl(dto.getImageUrl());
         product.setShelfLifeDays(dto.getShelfLifeDays());
         product.setLatestProductionDate(dto.getLatestProductionDate());
 
@@ -142,6 +145,7 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product> impl
         product.setLowStockThreshold(dto.getLowStockThreshold());
         product.setStatus(dto.getStatus());
         product.setRemark(dto.getRemark());
+        product.setImageUrl(dto.getImageUrl());
         product.setShelfLifeDays(dto.getShelfLifeDays());
         product.setLatestProductionDate(dto.getLatestProductionDate());
 
@@ -199,7 +203,7 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product> impl
     }
 
     @Override
-    public void export(javax.servlet.http.HttpServletResponse response, String name, Long categoryId, Integer status) {
+    public void export(HttpServletResponse response, String name, Long categoryId, Integer status) {
         try {
             LambdaQueryWrapper<Product> wrapper = new LambdaQueryWrapper<>();
             wrapper.like(name != null && !name.trim().isEmpty(), Product::getName, name)
@@ -250,5 +254,50 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product> impl
         } catch (Exception e) {
             throw new RuntimeException("导出Excel失败", e);
         }
+    }
+
+    @Override
+    public void downloadImportTemplate(HttpServletResponse response) {
+        try {
+            response.setContentType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+            response.setCharacterEncoding("utf-8");
+            String fileName = java.net.URLEncoder.encode("商品导入模板.xlsx", StandardCharsets.UTF_8).replaceAll("\\+", "%20");
+            response.setHeader("Content-Disposition", "attachment;filename=" + fileName);
+
+            EasyExcel.write(response.getOutputStream(), com.supermarket.product.vo.ProductImportExcelVO.class)
+                    .sheet("模板")
+                    .doWrite(java.util.Collections.emptyList());
+        } catch (Exception e) {
+            throw new RuntimeException("导出模板失败", e);
+        }
+    }
+
+    @Override
+    public String importProduct(MultipartFile file) {
+        try {
+            com.supermarket.product.listener.ProductImportListener listener = new com.supermarket.product.listener.ProductImportListener(this);
+            EasyExcel.read(file.getInputStream(), com.supermarket.product.vo.ProductImportExcelVO.class, listener).sheet().doRead();
+
+            StringBuilder sb = new StringBuilder();
+            sb.append("成功导入 ").append(listener.getSuccessCount()).append(" 条，失败 ").append(listener.getFailCount()).append(" 条。");
+            if (listener.getFailCount() > 0) {
+                sb.append(" 失败详情: ");
+                int limit = Math.min(5, listener.getErrorMsgs().size());
+                for (int i = 0; i < limit; i++) {
+                    sb.append(listener.getErrorMsgs().get(i)).append("; ");
+                }
+                if (listener.getErrorMsgs().size() > 5) {
+                    sb.append("...");
+                }
+            }
+            return sb.toString();
+        } catch (Exception e) {
+            throw new RuntimeException("导入失败: " + e.getMessage());
+        }
+    }
+
+    @Override
+    public void physicalDeleteProduct(Long id) {
+        baseMapper.physicalDeleteById(id);
     }
 }

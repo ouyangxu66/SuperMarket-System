@@ -28,13 +28,15 @@
           <el-button icon="Refresh" @click="resetQuery">重置</el-button>
         </el-form-item>
       </el-form>
+
     </el-card>
 
-    <!-- 操作栏与表格 -->
+    <!-- 数据表格 -->
     <el-card class="table-card">
       <div class="table-operations">
         <el-button type="primary" icon="Plus" @click="handleAdd">新增商品</el-button>
         <el-button type="warning" icon="Download" @click="handleExport">导出商品列表Excel</el-button>
+        <el-button type="success" icon="Upload" @click="handleImportClick">批量导入</el-button>
       </div>
 
       <el-table
@@ -160,7 +162,7 @@
         <el-row>
           <el-col :span="12">
              <el-form-item label="初始库存" prop="stock">
-              <el-input-number v-model="form.stock" :min="0" :disabled="dialog.type === 'edit'" style="width: 100%" />
+              <el-input-number v-model="form.stock" :min="0" style="width: 100%" />
             </el-form-item>
           </el-col>
           <el-col :span="12">
@@ -191,7 +193,7 @@
             :before-upload="beforeAvatarUpload"
             accept="image/*"
           >
-            <img v-if="form.imageUrl" :src="form.imageUrl" class="avatar" />
+            <img v-if="form.imageUrl" :src="form.imageUrl" class="avatar" alt="产品图片" />
             <el-icon v-else class="avatar-uploader-icon"><Plus /></el-icon>
           </el-upload>
         </el-form-item>
@@ -203,25 +205,60 @@
         </div>
       </template>
     </el-dialog>
+
+    <!-- 批量导入商品弹窗 -->
+    <el-dialog
+      title="批量导入商品"
+      v-model="importDialog.visible"
+      width="400px"
+    >
+      <div style="text-align: center;">
+        <el-upload
+          class="upload-demo"
+          drag
+          action="#"
+          :auto-upload="false"
+          :show-file-list="true"
+          :on-change="handleFileChange"
+          :limit="1"
+          ref="uploadRef"
+        >
+          <el-icon class="el-icon--upload"><upload-filled /></el-icon>
+          <div class="el-upload__text">
+            将文件拖到此处，或 <em>点击选取文件</em>
+          </div>
+          <template #tip>
+            <div class="el-upload__tip">
+              请先 <el-button link type="primary" @click="handleDownloadTemplate">下载模板</el-button>，按照模板格式填好后上传
+            </div>
+          </template>
+        </el-upload>
+      </div>
+      <template #footer>
+        <div class="dialog-footer">
+          <el-button @click="importDialog.visible = false">取消</el-button>
+          <el-button type="primary" @click="submitImport" :loading="importLoading">导入</el-button>
+        </div>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
 <script setup>
-/**
- * 商品列表页面
- */
 import { ref, reactive, onMounted } from 'vue'
 import {
   getProductPage,
   addProduct,
   updateProduct,
-  updateProductStatus,
   deleteProduct,
-  exportProducts
+  updateProductStatus,
+  exportProducts,
+  downloadImportTemplate,
+  importProduct
 } from '@/api/product'
 import { getCategoryTree } from '@/api/category'
 import { uploadFile } from '@/api/common'
-import { Plus, Picture } from '@element-plus/icons-vue'
+import { Plus, Picture, UploadFilled } from '@element-plus/icons-vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 
 const loading = ref(false)
@@ -457,6 +494,64 @@ const submitForm = async () => {
       }
     }
   })
+}
+
+// 导入相关
+const importDialog = reactive({
+  visible: false
+})
+const importFile = ref(null)
+const importLoading = ref(false)
+const uploadRef = ref(null)
+
+const handleImportClick = () => {
+  importFile.value = null
+  importDialog.visible = true
+  if (uploadRef.value) {
+    uploadRef.value.clearFiles()
+  }
+}
+
+const handleDownloadTemplate = async () => {
+  try {
+    const res = await downloadImportTemplate()
+    const blob = new Blob([res.data], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' })
+    const link = document.createElement('a')
+    link.href = window.URL.createObjectURL(blob)
+    link.download = `商品导入模板.xlsx`
+    link.click()
+    window.URL.revokeObjectURL(link.href)
+  } catch (error) {
+    ElMessage.error('下载模板失败')
+    console.error(error)
+  }
+}
+
+const handleFileChange = (file) => {
+  importFile.value = file.raw
+}
+
+const submitImport = async () => {
+  if (!importFile.value) {
+    ElMessage.warning('请选择要上传的文件')
+    return
+  }
+
+  const formData = new FormData()
+  formData.append('file', importFile.value)
+
+  importLoading.value = true
+  try {
+    const res = await importProduct(formData)
+    ElMessage.success(res.data || '部分导入完成请查看提示')
+    importDialog.visible = false
+    getList()
+  } catch (error) {
+    console.error(error)
+    ElMessage.error(error.message || '导入失败')
+  } finally {
+    importLoading.value = false
+  }
 }
 
 // 重置表单

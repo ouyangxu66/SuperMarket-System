@@ -93,20 +93,17 @@ public class MemberController {
      */
     @GetMapping("/simple")
     public Result<Member> getSimpleMember(@RequestParam(required = false) String phone,
-                                          @RequestParam(required = false) String cardNo,
-                                          @RequestParam(required = false) String memberNo) {
+                                          @RequestParam(required = false) String name) {
         String normalizedPhone = phone == null ? null : phone.trim();
-        String normalizedCardNo = cardNo == null ? null : cardNo.trim();
-        String normalizedMemberNo = memberNo == null ? null : memberNo.trim();
+        String normalizedName = name == null ? null : name.trim();
+
         if ((normalizedPhone == null || normalizedPhone.isEmpty())
-                && (normalizedCardNo == null || normalizedCardNo.isEmpty())
-                && (normalizedMemberNo == null || normalizedMemberNo.isEmpty())) {
-            throw new BusinessException("请至少提供手机号、会员卡号或会员编号中的一个查询条件");
+                && (normalizedName == null || normalizedName.isEmpty())) {
+            throw new BusinessException("请至少提供手机号或者姓名进行查询");
         }
         Member member = memberService.lambdaQuery()
                 .eq(normalizedPhone != null && !normalizedPhone.isEmpty(), Member::getPhone, normalizedPhone)
-                .eq(normalizedCardNo != null && !normalizedCardNo.isEmpty(), Member::getCardNo, normalizedCardNo)
-                .eq(normalizedMemberNo != null && !normalizedMemberNo.isEmpty(), Member::getMemberNo, normalizedMemberNo)
+                .like(normalizedName != null && !normalizedName.isEmpty(), Member::getName, normalizedName)
                 .eq(Member::getDeleted, 0)
                 .last("LIMIT 1")
                 .one();

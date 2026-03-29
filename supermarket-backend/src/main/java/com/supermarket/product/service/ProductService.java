@@ -5,6 +5,8 @@ import com.baomidou.mybatisplus.extension.service.IService;
 import com.supermarket.product.dto.ProductFormDTO;
 import com.supermarket.product.entity.Product;
 
+import javax.servlet.http.HttpServletResponse;
+import org.springframework.web.multipart.MultipartFile;
 import java.util.Date;
 import java.util.List;
 
@@ -56,5 +58,22 @@ public interface ProductService extends IService<Product> {
     /**
      * 导出商品列表
      */
-    void export(javax.servlet.http.HttpServletResponse response, String name, Long categoryId, Integer status);
+    void export(HttpServletResponse response, String name, Long categoryId, Integer status);
+
+    /**
+     * 导出商品导入模板
+     */
+    void downloadImportTemplate(HttpServletResponse response);
+
+    /**
+     * 批量导入商品
+     * @param file 传过来的excel文件
+     * @return 返回结果信息：成功导入x条，失败y条等
+     */
+    String importProduct(MultipartFile file);
+
+    /**
+     * 物理删除商品
+     */
+    void physicalDeleteProduct(Long id);
 }

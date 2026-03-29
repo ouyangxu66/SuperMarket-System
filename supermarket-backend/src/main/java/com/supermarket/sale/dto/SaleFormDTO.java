@@ -13,6 +13,8 @@ public class SaleFormDTO implements Serializable {
     private BigDecimal realPayAmount; // 实付金额 (可能由收银员手动改价)
     private Long memberId; // 会员ID（可选）
     private String remark;
+    private Boolean usePoints; // 是否使用积分抵扣
+    private Integer usedPoints; // 使用的积分数量
 
     // 购物车商品列表
     private List<ItemDTO> items;
@@ -36,6 +38,10 @@ public class SaleFormDTO implements Serializable {
     public void setMemberId(Long memberId) { this.memberId = memberId; }
     public String getRemark() { return remark; }
     public void setRemark(String remark) { this.remark = remark; }
+    public Boolean getUsePoints() { return usePoints; }
+    public void setUsePoints(Boolean usePoints) { this.usePoints = usePoints; }
+    public Integer getUsedPoints() { return usedPoints; }
+    public void setUsedPoints(Integer usedPoints) { this.usedPoints = usedPoints; }
     public List<ItemDTO> getItems() { return items; }
     public void setItems(List<ItemDTO> items) { this.items = items; }
 }

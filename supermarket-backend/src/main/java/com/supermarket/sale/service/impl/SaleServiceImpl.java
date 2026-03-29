@@ -98,10 +98,33 @@ public class SaleServiceImpl extends ServiceImpl<SaleOrderMapper, SaleOrder> imp
         }
 
         BigDecimal realAmount = dto.getRealPayAmount() != null ? dto.getRealPayAmount() : totalAmount;
+
+        // 处理积分抵扣
+        Integer usedPoints = 0;
+        BigDecimal pointDeductAmount = BigDecimal.ZERO;
+        if (member != null && Boolean.TRUE.equals(dto.getUsePoints()) && dto.getUsedPoints() != null && dto.getUsedPoints() > 0) {
+            usedPoints = dto.getUsedPoints();
+            if (member.getPoints() == null || member.getPoints() < usedPoints) {
+                throw new BusinessException("会员积分不足");
+            }
+            if (usedPoints % 100 != 0) {
+                throw new BusinessException("抵扣积分必须是100的整数倍");
+            }
+            // 100积分抵扣1元
+            pointDeductAmount = new BigDecimal(usedPoints).divide(new BigDecimal(100), 2, RoundingMode.HALF_UP);
+
+            // 实付金额不能小于0
+            if (realAmount.compareTo(pointDeductAmount) < 0) {
+                throw new BusinessException("抵扣金额不能大于实付金额");
+            }
+            realAmount = realAmount.subtract(pointDeductAmount);
+        }
+
         realAmount = realAmount.setScale(2, RoundingMode.HALF_UP);
         totalAmount = totalAmount.setScale(2, RoundingMode.HALF_UP);
-        if (realAmount.compareTo(BigDecimal.ZERO) <= 0) {
-            throw new BusinessException("实收金额必须大于0");
+        // ...这里去掉了不能为0的限制，如果纯积分抵扣为0元也是可以的
+        if (realAmount.compareTo(BigDecimal.ZERO) < 0) {
+            throw new BusinessException("实收金额不能小于0");
         }
 
         SaleOrder order = new SaleOrder();
@@ -111,8 +134,8 @@ public class SaleServiceImpl extends ServiceImpl<SaleOrderMapper, SaleOrder> imp
         order.setStatus(1);
         order.setRemark(dto.getRemark());
         order.setPointEarned(0);
-        order.setPointDeducted(0);
-        order.setPointDeductAmount(BigDecimal.ZERO);
+        order.setPointDeducted(usedPoints);
+        order.setPointDeductAmount(pointDeductAmount);
         order.setTotalAmount(totalAmount);
         order.setRealAmount(realAmount);
 
@@ -142,6 +165,16 @@ public class SaleServiceImpl extends ServiceImpl<SaleOrderMapper, SaleOrder> imp
             member.setTotalConsumeCount((member.getTotalConsumeCount() == null ? 0 : member.getTotalConsumeCount()) + 1);
             member.setLastConsumeTime(new Date());
             memberService.updateById(member);
+
+            // 扣除使用的积分
+            if (usedPoints > 0) {
+                MemberPointChangeDTO deductDTO = new MemberPointChangeDTO();
+                deductDTO.setMemberId(member.getId());
+                deductDTO.setChangePoints(-usedPoints);
+                deductDTO.setSource("消费抵扣");
+                deductDTO.setRemark("订单号:" + orderNo);
+                memberPointFlowService.adjust(deductDTO);
+            }
 
             if (earnedPoints > 0) {
                 MemberPointChangeDTO pointChangeDTO = new MemberPointChangeDTO();

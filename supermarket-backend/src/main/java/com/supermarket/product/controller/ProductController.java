@@ -6,7 +6,6 @@ import com.supermarket.common.result.Result;
 import com.supermarket.product.dto.ProductFormDTO;
 import com.supermarket.product.entity.Product;
 import com.supermarket.product.service.ProductService;
-import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Date;
@@ -102,7 +101,7 @@ public class ProductController {
     }
 
     /**
-     * 删除商品 (逻辑删除)
+     * 删除商品 (物理删除)
      * DELETE /api/product/{id}
      */
     @DeleteMapping("/{id}")
@@ -111,9 +110,8 @@ public class ProductController {
         if (product == null) {
             return Result.error("商品不存在");
         }
-        // 逻辑删除：将 deleted 字段设为 1
-        product.setDeleted(1);
-        productService.updateById(product);
+        // 物理删除：直接从数据库中删除
+        productService.physicalDeleteProduct(id);
         return Result.success("删除成功");
     }
 
@@ -171,5 +169,29 @@ public class ProductController {
                        @RequestParam(required = false) Long categoryId,
                        @RequestParam(required = false) Integer status) {
         productService.export(response, name, categoryId, status);
+    }
+
+    /**
+     * 下载商品导入模板
+     * @param response
+     */
+    @GetMapping("/import-template")
+    public void downloadImportTemplate(javax.servlet.http.HttpServletResponse response) {
+        productService.downloadImportTemplate(response);
+    }
+
+    /**
+     * 批量导入商品
+     * @param file
+     * @return
+     */
+    @PostMapping("/import")
+    public Result<String> importProduct(@RequestParam("file") org.springframework.web.multipart.MultipartFile file) {
+        try {
+            String resultMsg = productService.importProduct(file);
+            return Result.success(resultMsg);
+        } catch (Exception e) {
+            return Result.error(e.getMessage());
+        }
     }
 }
