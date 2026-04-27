@@ -189,5 +189,75 @@ public class SaleServiceImpl extends ServiceImpl<SaleOrderMapper, SaleOrder> imp
 
         return orderNo;
     }
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void refund(Long orderId, String reason) {
+        SaleOrder order = this.getById(orderId);
+        if (order == null || (order.getDeleted() != null && order.getDeleted() == 1)) {
+            throw new BusinessException("订单不存在");
+        }
+
+        if (order.getStatus() == -1) {
+            throw new BusinessException("订单已退款，不能重复退货");
+        }
+
+        if (order.getStatus() != 1) {
+            throw new BusinessException("订单状态异常，无法退货");
+        }
+
+        List<SaleDetail> details = saleDetailMapper.selectList(
+                new com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<SaleDetail>()
+                        .eq(SaleDetail::getOrderId, orderId)
+        );
+
+        if (details == null || details.isEmpty()) {
+            throw new BusinessException("订单明细不存在");
+        }
+
+        for (SaleDetail detail : details) {
+            Product product = productService.getById(detail.getProductId());
+            if (product != null) {
+                product.setStock(product.getStock() + detail.getQuantity());
+                productService.updateById(product);
+            }
+        }
+
+        if (order.getMemberId() != null) {
+            Member member = memberService.getById(order.getMemberId());
+            if (member != null) {
+                if (order.getPointEarned() != null && order.getPointEarned() > 0) {
+                    MemberPointChangeDTO deductDTO = new MemberPointChangeDTO();
+                    deductDTO.setMemberId(member.getId());
+                    deductDTO.setChangePoints(-order.getPointEarned());
+                    deductDTO.setSource("退货扣回积分");
+                    deductDTO.setRemark("订单号:" + order.getOrderNo() + ", 原因:" + (reason != null ? reason : ""));
+                    memberPointFlowService.adjust(deductDTO);
+                }
+
+                if (order.getPointDeducted() != null && order.getPointDeducted() > 0) {
+                    MemberPointChangeDTO restoreDTO = new MemberPointChangeDTO();
+                    restoreDTO.setMemberId(member.getId());
+                    restoreDTO.setChangePoints(order.getPointDeducted());
+                    restoreDTO.setSource("退货返还积分");
+                    restoreDTO.setRemark("订单号:" + order.getOrderNo() + ", 原因:" + (reason != null ? reason : ""));
+                    memberPointFlowService.adjust(restoreDTO);
+                }
+
+                member.setTotalConsumeAmount(
+                        (member.getTotalConsumeAmount() == null ? BigDecimal.ZERO : member.getTotalConsumeAmount())
+                                .subtract(order.getRealAmount() != null ? order.getRealAmount() : BigDecimal.ZERO)
+                );
+                member.setTotalConsumeCount(
+                        (member.getTotalConsumeCount() == null ? 0 : member.getTotalConsumeCount()) - 1
+                );
+                memberService.updateById(member);
+            }
+        }
+
+        order.setStatus(-1);
+        order.setRemark((order.getRemark() != null ? order.getRemark() + " | " : "") +
+                "退货原因: " + (reason != null ? reason : "无"));
+        this.updateById(order);
+    }
 }
 

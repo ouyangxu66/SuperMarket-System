@@ -213,4 +213,58 @@ public class InventoryCountServiceImpl extends ServiceImpl<InventoryCountMapper,
         inventoryCount.setDiscrepancyCount(discrepancyCount);
         this.updateById(inventoryCount);
     }
+    @Override
+    public void exportCountReport(javax.servlet.http.HttpServletResponse response, Long countId) {
+        try {
+            // 获取盘点主表信息
+            InventoryCount inventoryCount = this.getById(countId);
+            if (inventoryCount == null) {
+                throw new RuntimeException("盘点任务不存在");
+            }
+
+            // 获取盘点详情列表
+            List<InventoryCountDetail> details = getDetailsByCountId(countId);
+
+            // 转换为Excel VO对象
+            List<com.supermarket.inventory.vo.InventoryCountReportVO> excelList = new java.util.ArrayList<>();
+            for (InventoryCountDetail detail : details) {
+                com.supermarket.inventory.vo.InventoryCountReportVO vo = new com.supermarket.inventory.vo.InventoryCountReportVO();
+                vo.setCountNumber(inventoryCount.getCountNumber());
+                vo.setTitle(inventoryCount.getTitle());
+                vo.setProductName(detail.getProductName());
+                vo.setProductBarcode(detail.getProductBarcode());
+                vo.setProductSpec(detail.getProductSpec());
+                vo.setProductUnit(detail.getProductUnit());
+                vo.setSystemStock(detail.getSystemStock());
+                vo.setActualStock(detail.getActualStock());
+                vo.setDifference(detail.getDifference());
+                vo.setDiscrepancyReason(detail.getDiscrepancyReason());
+
+                // 转换状态显示
+                String statusText = "NORMAL".equals(detail.getStatus()) ? "正常" : "有差异";
+                vo.setStatus(statusText);
+
+                vo.setRemark(detail.getRemark());
+                excelList.add(vo);
+            }
+
+            // 设置响应头
+            response.setContentType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+            response.setCharacterEncoding("utf-8");
+            String fileName = java.net.URLEncoder.encode(
+                    "盘点报告_" + inventoryCount.getCountNumber() + "_" + System.currentTimeMillis() + ".xlsx",
+                    java.nio.charset.StandardCharsets.UTF_8
+            ).replaceAll("\\+", "%20");
+            response.setHeader("Content-Disposition", "attachment;filename=" + fileName);
+
+            // 使用EasyExcel导出
+            com.alibaba.excel.EasyExcel.write(response.getOutputStream(),
+                            com.supermarket.inventory.vo.InventoryCountReportVO.class)
+                    .sheet("盘点报告")
+                    .doWrite(excelList);
+
+        } catch (Exception e) {
+            throw new RuntimeException("导出盘点报告失败", e);
+        }
+    }
 }

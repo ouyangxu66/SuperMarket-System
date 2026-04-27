@@ -44,7 +44,14 @@
                 <el-option label="支付宝" :value="3" />
               </el-select>
             </el-form-item>
+            <el-form-item label="订单状态">
+              <el-select v-model="queryParams.status" placeholder="全部状态" clearable style="width: 120px">
+                <el-option label="已支付" :value="1" />
+                <el-option label="已退款" :value="-1" />
+              </el-select>
+            </el-form-item>
             <el-form-item label="销售时间">
+
               <el-date-picker
                 v-model="dateRange"
                 type="datetimerange"
@@ -77,6 +84,12 @@
             <el-table-column prop="paymentType" label="支付方式" width="100" align="center">
               <template #default="scope">{{ paymentTypeText(scope.row.paymentType) }}</template>
             </el-table-column>
+            <el-table-column prop="status" label="订单状态" width="100" align="center">
+              <template #default="scope">
+                <el-tag v-if="scope.row.status === 1" type="success" size="small">已支付</el-tag>
+                <el-tag v-else-if="scope.row.status === -1" type="info" size="small">已退款</el-tag>
+              </template>
+            </el-table-column>
             <el-table-column prop="memberName" label="会员姓名" width="120">
               <template #default="scope">{{ scope.row.memberName || '-' }}</template>
             </el-table-column>
@@ -89,9 +102,17 @@
             <el-table-column prop="createTime" label="销售时间" width="180" align="center">
               <template #default="scope">{{ formatDateTime(scope.row.createTime) }}</template>
             </el-table-column>
-            <el-table-column label="操作" width="100" align="center" fixed="right">
+            <el-table-column label="操作" width="160" align="center" fixed="right">
               <template #default="scope">
                 <el-button type="primary" link @click="handleViewDetail(scope.row)">详情</el-button>
+                <el-button
+                    v-if="scope.row.status === 1"
+                    type="danger"
+                    link
+                    @click="handleRefund(scope.row)"
+                >
+                  退货
+                </el-button>
               </template>
             </el-table-column>
           </el-table>
@@ -204,8 +225,8 @@
 
 <script setup>
 import { computed, onMounted, reactive, ref } from 'vue'
-import { getSaleDetail, getSalePage, exportSale, getProductSalePage, exportProductSale, exportProductSaleSummary } from '@/api/sale'
-import { ElMessage } from 'element-plus'
+import { getSaleDetail, getSalePage, exportSale, getProductSalePage, exportProductSale, exportProductSaleSummary, refundOrder } from '@/api/sale'
+import { ElMessage, ElMessageBox } from 'element-plus'
 
 const activeTab = ref('order')
 const loading = ref(false)
@@ -223,6 +244,7 @@ const queryParams = reactive({
   orderNo: '',
   memberName: '',
   paymentType: undefined,
+  status: undefined,
   startTime: undefined,
   endTime: undefined
 })
@@ -282,6 +304,7 @@ const resetQuery = () => {
   queryParams.orderNo = ''
   queryParams.memberName = ''
   queryParams.paymentType = undefined
+  queryParams.status = undefined
   dateRange.value = []
   handleQuery()
 }
@@ -389,6 +412,25 @@ const handleViewDetail = async (row) => {
     detailDialog.visible = true
   } catch (error) {
     console.error('获取订单详情失败', error)
+  }
+}
+const handleRefund = async (row) => {
+  try {
+    await ElMessageBox.prompt('请输入退货原因（可选）', '退货确认', {
+      confirmButtonText: '确定',
+      cancelButtonText: '取消',
+      inputPattern: /^[\s\S]*$/,
+      inputErrorMessage: '输入格式不正确'
+    }).then(async ({ value }) => {
+      await refundOrder({ orderId: row.id, reason: value || '' })
+      ElMessage.success('退货成功')
+      queryParams.status = undefined
+      fetchSaleList()
+    })
+  } catch (error) {
+    if (error !== 'cancel') {
+      console.error('退货失败', error)
+    }
   }
 }
 

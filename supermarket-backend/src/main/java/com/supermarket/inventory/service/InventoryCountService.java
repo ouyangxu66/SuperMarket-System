@@ -78,4 +78,10 @@ public interface InventoryCountService extends IService<InventoryCount> {
      * @param countId 盘点ID
      */
     void calculateDiscrepancies(Long countId);
+    /**
+     * 导出盘点报告
+     * @param response HTTP响应对象
+     * @param countId 盘点ID
+     */
+    void exportCountReport(javax.servlet.http.HttpServletResponse response, Long countId);
 }

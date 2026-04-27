@@ -93,3 +93,23 @@ export function addInventoryCountDetail(countId, data) {
     data
   })
 }
+// 更新盘点详情
+export function updateInventoryCountDetail(data) {
+  return request({
+    url: '/inventory/count/detail',
+    method: 'put',
+    data
+  })
+}
+/**
+ * 获取智能补货建议
+ * @param {number} restockDays 建议覆盖天数（默认7天）
+ * @returns {Promise} 补货建议列表
+ */
+export function getRestockSuggestions(restockDays = 7) {
+  return request({
+    url: '/inventory/restock-suggestions',
+    method: 'get',
+    params: { restockDays }
+  })
+}

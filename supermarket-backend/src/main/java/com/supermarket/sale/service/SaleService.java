@@ -15,4 +15,10 @@ public interface SaleService extends IService<SaleOrder> {
      * @return 订单号
      */
     String checkout(SaleFormDTO dto);
+    /**
+     * 退货处理
+     * @param orderId 订单ID
+     * @param reason 退货原因
+     */
+    void refund(Long orderId, String reason);
 }

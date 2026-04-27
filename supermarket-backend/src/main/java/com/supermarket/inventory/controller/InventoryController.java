@@ -4,22 +4,24 @@ import com.supermarket.common.result.Result;
 import com.supermarket.inventory.service.InventoryService;
 import com.supermarket.product.entity.Product;
 import org.springframework.web.bind.annotation.*;
-
 import java.util.List;
+import com.supermarket.inventory.service.RestockSuggestionService;
+import com.supermarket.inventory.vo.RestockSuggestionVO;
 
 /**
  * 库存控制器
- * 提供库存相关的API接口，包括库存预警、库存查询等功能
  */
 @RestController
 @RequestMapping("/inventory")
 public class InventoryController {
 
     private final InventoryService inventoryService;
+    private final RestockSuggestionService restockSuggestionService;
 
-    // 构造器注入
-    public InventoryController(InventoryService inventoryService) {
+    public InventoryController(InventoryService inventoryService,
+                               RestockSuggestionService restockSuggestionService) {
         this.inventoryService = inventoryService;
+        this.restockSuggestionService = restockSuggestionService;
     }
 
     /**
@@ -65,5 +67,11 @@ public class InventoryController {
     @GetMapping("/export")
     public void export(javax.servlet.http.HttpServletResponse response) {
         inventoryService.export(response);
+    }
+    @GetMapping("/restock-suggestions")
+    public Result<List<RestockSuggestionVO>> getRestockSuggestions(
+            @RequestParam(required = false, defaultValue = "7") Integer restockDays) {
+        List<RestockSuggestionVO> suggestions = restockSuggestionService.getRestockSuggestions(restockDays);
+        return Result.success(suggestions);
     }
 }

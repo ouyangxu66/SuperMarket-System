@@ -8,15 +8,6 @@
         </div>
       </template>
 
-      <el-alert
-        title="注意"
-        description="注册功能暂未开放API，请联系系统管理员获取账号。"
-        type="warning"
-        show-icon
-        :closable="false"
-        style="margin-bottom: 20px"
-      />
-
       <el-form :model="registerForm" :rules="rules" ref="registerFormRef" label-position="top" size="large">
         <el-form-item label="用户名" prop="username">
           <el-input v-model="registerForm.username" placeholder="请输入用户名" prefix-icon="User" />
@@ -28,7 +19,7 @@
           <el-input v-model="registerForm.confirmPassword" type="password" placeholder="请再次输入密码" prefix-icon="Lock" show-password />
         </el-form-item>
         <el-form-item>
-          <el-button type="primary" class="register-button" @click="handleRegister">注册</el-button>
+          <el-button type="primary" :loading="loading" class="register-button" @click="handleRegister">注册</el-button>
         </el-form-item>
         <div class="register-links">
           <router-link to="/login">已有账号？去登录</router-link>
@@ -44,8 +35,12 @@
  * 目前仅作为 UI 展示，暂无实际注册功能
  */
 import { ref, reactive } from 'vue'
+import { useRouter } from 'vue-router'
+import { register } from '@/api/auth'
 import { ElMessage } from 'element-plus'
 
+const router = useRouter()
+const loading = ref(false)
 const registerFormRef = ref(null)
 // 注册表单数据
 const registerForm = reactive({
@@ -75,11 +70,24 @@ const rules = {
 }
 
 // 处理注册提交
-const handleRegister = () => {
+const handleRegister = async () => {
   if (!registerFormRef.value) return
-  registerFormRef.value.validate((valid) => {
+
+  await registerFormRef.value.validate(async (valid) => {
     if (valid) {
-      ElMessage.warning('注册功能暂未开放，请联系管理员。')
+      loading.value = true
+      try {
+        await register({
+          username: registerForm.username,
+          password: registerForm.password
+        })
+        ElMessage.success('注册成功，请登录')
+        router.push('/login')
+      } catch (error) {
+        console.error(error)
+      } finally {
+        loading.value = false
+      }
     }
   })
 }
@@ -92,13 +100,19 @@ const handleRegister = () => {
   justify-content: center;
   align-items: center;
   height: 100vh;
-  background-color: #f0f2f5;
+  background-image: url('/login-background.jpg');
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-attachment: fixed;
 }
 
 .register-card {
   width: 400px;
-  border-radius: 8px;
-  box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.1);
+  border-radius: 12px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+  backdrop-filter: blur(10px);
+  background-color: rgba(255, 255, 255, 0.95);
 }
 
 .register-header {

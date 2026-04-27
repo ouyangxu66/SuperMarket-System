@@ -24,7 +24,9 @@ public interface UserMapper extends BaseMapper<User> {
     void insertUserRole(@Param("userId") Long userId, @Param("roleId") Long roleId);
 
     @Select("SELECT r.* FROM sys_role r " +
-            "LEFT JOIN sys_user_role ur ON r.id = ur.role_id " +
-            "WHERE ur.user_id = #{userId}")
+            "INNER JOIN sys_user_role ur ON r.id = ur.role_id " +
+            "WHERE ur.user_id = #{userId} " +
+            "AND r.is_deleted = 0")
     List<Role> selectRolesByUserId(Long userId);
+
 }

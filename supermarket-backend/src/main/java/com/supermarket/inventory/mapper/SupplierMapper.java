@@ -1,6 +1,7 @@
 package com.supermarket.inventory.mapper;
 
-import com.baomidou.mybatisplus.core.mapper.BaseMapper;
+import com.baomidou.mybatisplus.core.mapper
+        .BaseMapper;
 import com.supermarket.inventory.entity.Supplier;
 import org.apache.ibatis.annotations.Mapper;
 

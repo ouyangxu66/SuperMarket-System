@@ -96,3 +96,15 @@ export function exportProductSaleSummary(query) {
     responseType: 'blob'
   })
 }
+/**
+ * 退货处理
+ * @param {Object} data - { orderId: number, reason: string }
+ * @returns {Promise}
+ */
+export function refundOrder(data) {
+  return request({
+    url: '/sale/refund',
+    method: 'post',
+    data
+  })
+}

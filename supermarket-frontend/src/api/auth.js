@@ -17,6 +17,13 @@ export function login(data) {
     data
   })
 }
+export function register(data) {
+  return request({
+    url: '/auth/register',
+    method: 'post',
+    data
+  })
+}
 
 /**
  * 获取当前登录用户信息

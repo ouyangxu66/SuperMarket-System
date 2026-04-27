@@ -147,4 +147,12 @@ public class InventoryCountController {
         inventoryCountService.updateDetail(detail);
         return Result.success("删除盘点详情成功");
     }
+    /**
+     * 导出盘点报告
+     * GET /inventory/count/{id}/export
+     */
+    @GetMapping("/{id}/export")
+    public void exportCountReport(@PathVariable Long id, javax.servlet.http.HttpServletResponse response) {
+        inventoryCountService.exportCountReport(response, id);
+    }
 }

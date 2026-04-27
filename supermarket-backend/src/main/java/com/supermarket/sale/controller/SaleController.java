@@ -62,6 +62,7 @@ public class SaleController {
             @RequestParam(required = false) String orderNo,
             @RequestParam(required = false) String memberName,
             @RequestParam(required = false) Integer paymentType,
+            @RequestParam(required = false) Integer status,
             @RequestParam(required = false) Long startTime,
             @RequestParam(required = false) Long endTime) {
 
@@ -70,6 +71,7 @@ public class SaleController {
         wrapper.like(StringUtils.hasText(orderNo), SaleOrder::getOrderNo, orderNo)
                 .like(StringUtils.hasText(memberName), SaleOrder::getMemberName, memberName)
                 .eq(paymentType != null, SaleOrder::getPaymentType, paymentType)
+                .eq(status != null, SaleOrder::getStatus, status)
                 .ge(startTime != null, SaleOrder::getCreateTime, startTime == null ? null : new Date(startTime))
                 .le(endTime != null, SaleOrder::getCreateTime, endTime == null ? null : new Date(endTime))
                 .orderByDesc(SaleOrder::getCreateTime);
@@ -91,6 +93,14 @@ public class SaleController {
         order.setItems(details);
         return Result.success(order);
     }
+    @PostMapping("/refund")
+    public Result<String> refund(@RequestBody java.util.Map<String, Object> params) {
+        Long orderId = Long.valueOf(params.get("orderId").toString());
+        String reason = params.get("reason") != null ? params.get("reason").toString() : "";
+        saleService.refund(orderId, reason);
+        return Result.success("退货成功");
+    }
+
 
     /**
      * 导出销售流水
@@ -98,11 +108,12 @@ public class SaleController {
      */
     @GetMapping("/export")
     public void exportSale(HttpServletResponse response,
-            @RequestParam(required = false) String orderNo,
-            @RequestParam(required = false) String memberName,
-            @RequestParam(required = false) Integer paymentType,
-            @RequestParam(required = false) Long startTime,
-            @RequestParam(required = false) Long endTime) {
+                           @RequestParam(required = false) String orderNo,
+                           @RequestParam(required = false) String memberName,
+                           @RequestParam(required = false) Integer paymentType,
+                           @RequestParam(required = false) Integer status,
+                           @RequestParam(required = false) Long startTime,
+                           @RequestParam(required = false) Long endTime) {
 
         try {
             response.setContentType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
@@ -114,6 +125,7 @@ public class SaleController {
                     .like(StringUtils.hasText(orderNo), SaleOrder::getOrderNo, orderNo)
                     .like(StringUtils.hasText(memberName), SaleOrder::getMemberName, memberName)
                     .eq(paymentType != null, SaleOrder::getPaymentType, paymentType)
+                    .eq(status != null, SaleOrder::getStatus, status)
                     .ge(startTime != null, SaleOrder::getCreateTime, startTime == null ? null : new Date(startTime))
                     .le(endTime != null, SaleOrder::getCreateTime, endTime == null ? null : new Date(endTime))
                     .orderByDesc(SaleOrder::getCreateTime));

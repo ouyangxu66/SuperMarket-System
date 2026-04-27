@@ -64,7 +64,7 @@
             </el-table-column>
             <el-table-column label="操作" width="120" align="center">
               <template #default="scope">
-                <el-button type="primary" link @click="handleReplenish(scope.row)">补货</el-button>
+                <el-button type="primary" link @click="goToProductEdit(scope.row)">补货</el-button>
               </template>
             </el-table-column>
           </el-table>
@@ -100,7 +100,9 @@
              </el-table-column>
              <el-table-column prop="lowStockThreshold" label="预警阈值" width="120" align="center" />
              <el-table-column label="操作" width="120" align="center">
-               <el-button type="primary" link @click="ElMessage.info('请前往采购系统补货')">补货</el-button>
+               <template #default="scope">
+               <el-button type="primary" link  @click="goToProductEdit(scope.row)">补货</el-button>
+               </template>
              </el-table-column>
           </el-table>
         </el-card>
@@ -187,12 +189,16 @@
 <script setup>
 import { ref, reactive, onMounted } from 'vue'
 import {
-  getLowStockList,
-  exportInventory
-} from '@/api/inventory'
-import { getProductPage, updateProduct } from '@/api/product' // 复用商品查询接口来展示所有库存
-import { ElMessage } from 'element-plus'
 
+  getLowStockList,
+  exportInventory,
+} from '@/api/inventory'
+import { getCategoryTree } from '@/api/category'
+import { getProductPage, updateProduct, getExpiringProducts, getExpiredProducts } from '@/api/product' // 复用商品查询接口来展示所有库存
+import { ElMessage } from 'element-plus'
+import { useRouter } from 'vue-router'
+
+const router = useRouter()
 const activeTab = ref('all')
 const loading = ref(false)
 const inventoryList = ref([])
@@ -215,6 +221,13 @@ const replenishForm = reactive({
 })
 const replenishLoading = ref(false)
 
+const goToProductEdit = (row) => {
+  router.push({
+    path: '/product/list',
+    query: { editId: row.id }
+  })
+  ElMessage.success('正在跳转到商品管理页面进行补货')
+}
 const handleReplenish = (row) => {
   replenishForm.id = row.id
   replenishForm.name = row.name

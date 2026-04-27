@@ -25,7 +25,20 @@
         <el-table-column prop="productName" label="商品名称" min-width="150" show-overflow-tooltip />
         <el-table-column prop="productSpec" label="规格" width="100" />
         <el-table-column prop="systemStock" label="系统库存" width="100" align="center" />
-        <el-table-column prop="actualStock" label="实盘库存" width="100" align="center" />
+
+        <el-table-column label="实盘库存" width="120" align="center">
+          <template #default="scope">
+            <el-input-number
+                v-if="countInfo.status === 'IN_PROGRESS'"
+                v-model="scope.row.actualStock"
+                :min="0"
+                :precision="0"
+                controls-position="right"      style="width: 100%"
+                @change="handleActualStockChange(scope.row)"
+            />
+            <span v-else>{{ scope.row.actualStock }}</span>
+          </template>
+        </el-table-column>
         <el-table-column label="差异" width="100" align="center">
           <template #default="scope">
             <span :class="getDiffClass(scope.row.difference)">
@@ -35,6 +48,12 @@
         </el-table-column>
         <el-table-column prop="discrepancyReason" label="差异原因" min-width="150" show-overflow-tooltip />
         <el-table-column prop="remark" label="备注" show-overflow-tooltip />
+        <el-table-column label="操作" width="100" align="center" v-if="countInfo.status === 'IN_PROGRESS'">
+          <template #default="scope">
+            <el-button type="primary" size="small" @click="handleEdit(scope.row)">修改</el-button>
+          </template>
+        </el-table-column>
+
       </el-table>
     </el-card>
 
@@ -91,6 +110,40 @@
         </span>
       </template>
     </el-dialog>
+    <el-dialog
+        title="修改盘点数据"
+        v-model="editDialog.visible"
+        width="500px"
+        @close="resetEditForm"
+    >
+      <el-form :model="editForm" :rules="editRules" ref="editFormRef" label-width="100px">
+        <div class="product-info-box">
+          <p>商品名称：<strong>{{ editForm.productName }}</strong></p>
+          <p>商品条码：{{ editForm.productBarcode }}</p>
+          <p>规格：{{ editForm.productSpec }}</p>
+          <p>单位：{{ editForm.productUnit }}</p>
+          <p>系统库存：<strong>{{ editForm.systemStock }}</strong></p>
+        </div>
+
+        <el-form-item label="实盘数量" prop="actualStock">
+          <el-input-number v-model="editForm.actualStock" :min="0" style="width: 100%" />
+        </el-form-item>
+
+        <el-form-item label="差异原因">
+          <el-input v-model="editForm.discrepancyReason" placeholder="如有差异请填写原因" />
+        </el-form-item>
+
+        <el-form-item label="备注">
+          <el-input v-model="editForm.remark" />
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <span class="dialog-footer">
+          <el-button @click="editDialog.visible = false">取消</el-button>
+          <el-button type="primary" @click="submitEditForm">保存修改</el-button>
+        </span>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
@@ -98,7 +151,7 @@
 import { ref, reactive, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
-import { getInventoryCountDetails, addInventoryCountDetail } from '@/api/inventory'
+import { getInventoryCountDetails, addInventoryCountDetail, updateInventoryCountDetail } from '@/api/inventory'
 import { getProductPage } from '@/api/product'
 
 const route = useRoute()
@@ -138,6 +191,27 @@ const formRef = ref(null)
 
 const rules = {
   productId: [{ required: true, message: '请选择商品', trigger: 'change' }],
+  actualStock: [{ required: true, message: '请输入实盘数量', trigger: 'blur' }]
+}
+// 修改相关
+const editDialog = reactive({
+  visible: false
+})
+const editFormRef = ref(null)
+const editForm = reactive({
+  id: null,
+  productId: null,
+  productName: '',
+  productBarcode: '',
+  productSpec: '',
+  productUnit: '',
+  systemStock: 0,
+  actualStock: 0,
+  discrepancyReason: '',
+  remark: ''
+})
+
+const editRules = {
   actualStock: [{ required: true, message: '请输入实盘数量', trigger: 'blur' }]
 }
 
@@ -257,6 +331,50 @@ const resetFormState = () => {
 const resetForm = () => {
   if (formRef.value) {
     formRef.value.resetFields()
+  }
+}
+// 实盘库存变化时自动计算差异
+const handleActualStockChange = (row) => {
+  row.difference = row.actualStock - row.systemStock
+  row.status = row.difference !== 0 ? 'DISCREPANCY' : 'NORMAL'
+  // 注意：这里只是前端显示变化，实际保存需要点击"修改"按钮
+}
+
+// 修改功能
+const handleEdit = (row) => {
+  editForm.id = row.id
+  editForm.productId = row.productId
+  editForm.productName = row.productName
+  editForm.productBarcode = row.productBarcode
+  editForm.productSpec = row.productSpec
+  editForm.productUnit = row.productUnit
+  editForm.systemStock = row.systemStock
+  editForm.actualStock = row.actualStock
+  editForm.discrepancyReason = row.discrepancyReason || ''
+  editForm.remark = row.remark || ''
+  editDialog.visible = true
+}
+
+const submitEditForm = async () => {
+  if (!editFormRef.value) return
+  await editFormRef.value.validate(async (valid) => {
+    if (valid) {
+      try {
+        await updateInventoryCountDetail(editForm)
+        ElMessage.success('修改成功')
+        editDialog.visible = false
+        loadDetails()
+      } catch (error) {
+        console.error(error)
+        ElMessage.error('修改失败：' + (error.response?.data?.message || error.message))
+      }
+    }
+  })
+}
+
+const resetEditForm = () => {
+  if (editFormRef.value) {
+    editFormRef.value.resetFields()
   }
 }
 </script>

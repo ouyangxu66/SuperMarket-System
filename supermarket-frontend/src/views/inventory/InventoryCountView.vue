@@ -36,21 +36,27 @@
         <el-table-column prop="createTime" label="创建时间" width="160">
            <template #default="scope">{{ formatDateTime(scope.row.createTime) }}</template>
         </el-table-column>
-        <el-table-column label="操作" width="220" align="center" fixed="right">
+        <el-table-column label="操作" width="280" align="center" fixed="right">
           <template #default="scope">
             <el-button
-              v-if="scope.row.status === 'DRAFT'"
-              type="success"
-              link
-              @click="handleStart(scope.row)"
+                v-if="scope.row.status === 'DRAFT'"
+                type="success"
+                link
+                @click="handleStart(scope.row)"
             >开始</el-button>
             <el-button
-              v-if="scope.row.status === 'IN_PROGRESS'"
-              type="warning"
-              link
-              @click="handleComplete(scope.row)"
+                v-if="scope.row.status === 'IN_PROGRESS'"
+                type="warning"
+                link
+                @click="handleComplete(scope.row)"
             >完成</el-button>
             <el-button type="primary" link @click="handleDetail(scope.row)">详情</el-button>
+            <el-button
+                v-if="scope.row.status === 'COMPLETED'"
+                type="success"
+                link
+                @click="handleExport(scope.row)"
+            >导出报告</el-button>
           </template>
         </el-table-column>
       </el-table>
@@ -219,11 +225,42 @@ const handleComplete = (row) => {
 }
 
 const handleDetail = (row) => {
-    router.push({
-        name: 'inventory-count-detail',
-        params: { id: row.id },
-        query: { title: row.title, status: row.status }
+  router.push({
+    name: 'inventory-count-detail',
+    params: { id: row.id },
+    query: { title: row.title, status: row.status }
+  })
+}
+
+const handleExport = async (row) => {
+  try {
+    const token = localStorage.getItem('token')
+    const response = await fetch(`/inventory/count/${row.id}/export`, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
     })
+
+    if (!response.ok) {
+      throw new Error('导出失败')
+    }
+
+    const blob = await response.blob()
+    const url = window.URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `盘点报告_${row.countNumber}_${new Date().getTime()}.xlsx`
+    document.body.appendChild(a)
+    a.click()
+    window.URL.revokeObjectURL(url)
+    document.body.removeChild(a)
+
+    ElMessage.success('导出成功')
+  } catch (error) {
+    console.error(error)
+    ElMessage.error('导出失败：' + error.message)
+  }
 }
 </script>
 

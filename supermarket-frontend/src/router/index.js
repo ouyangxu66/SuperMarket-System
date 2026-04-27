@@ -91,6 +91,12 @@ const router = createRouter({
           meta: { title: '盘点详情' }
         },
         {
+          path: '/inventory/restock',
+          name: 'inventory-restock',
+          component: () => import('../views/inventory/RestockSuggestionView.vue'),
+          meta: { title: '智能补货建议' }
+        },
+        {
           path: '/profile',
           name: 'profile',
           component: () => import('../views/ProfileView.vue'),
