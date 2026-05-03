@@ -30,6 +30,20 @@ import java.util.List;
 @Service
 public class SaleServiceImpl extends ServiceImpl<SaleOrderMapper, SaleOrder> implements SaleService {
 
+    private static class ProductInfo {
+        private Long productId;
+        private Integer quantityToReduce;
+        private Integer originalVersion;
+
+        public Long getProductId() { return productId; }
+        public void setProductId(Long productId) { this.productId = productId; }
+
+        public Integer getQuantityToReduce() { return quantityToReduce; }
+        public void setQuantityToReduce(Integer quantityToReduce) { this.quantityToReduce = quantityToReduce; }
+
+        public Integer getOriginalVersion() { return originalVersion; }
+        public void setOriginalVersion(Integer originalVersion) { this.originalVersion = originalVersion; }
+    }
     private final SaleDetailMapper saleDetailMapper;
     private final ProductService productService;
     private final MemberService memberService;
@@ -65,10 +79,9 @@ public class SaleServiceImpl extends ServiceImpl<SaleOrderMapper, SaleOrder> imp
 
         String orderNo = "XS" + new SimpleDateFormat("yyyyMMddHHmmss").format(new Date())
                 + (int) ((Math.random() * 9 + 1) * 1000);
-
         BigDecimal totalAmount = BigDecimal.ZERO;
         List<SaleDetail> details = new ArrayList<>();
-        List<Product> productsToUpdate = new ArrayList<>();
+        List<ProductInfo> productInfos = new ArrayList<>();
 
         for (SaleFormDTO.ItemDTO itemDTO : dto.getItems()) {
             Product product = productService.getById(itemDTO.getProductId());
@@ -93,8 +106,11 @@ public class SaleServiceImpl extends ServiceImpl<SaleOrderMapper, SaleOrder> imp
             totalAmount = totalAmount.add(amount);
             details.add(detail);
 
-            product.setStock(product.getStock() - itemDTO.getQuantity());
-            productsToUpdate.add(product);
+            ProductInfo productInfo = new ProductInfo();
+            productInfo.setProductId(product.getId());
+            productInfo.setQuantityToReduce(itemDTO.getQuantity());
+            productInfo.setOriginalVersion(product.getVersion());
+            productInfos.add(productInfo);
         }
 
         BigDecimal realAmount = dto.getRealPayAmount() != null ? dto.getRealPayAmount() : totalAmount;
@@ -148,10 +164,17 @@ public class SaleServiceImpl extends ServiceImpl<SaleOrderMapper, SaleOrder> imp
 
         this.save(order);
 
-        for (Product product : productsToUpdate) {
-            productService.updateById(product);
-        }
+        for (ProductInfo productInfo : productInfos) {
+            boolean success = productService.updateStockWithOptimisticLock(
+                    productInfo.getProductId(),
+                    productInfo.getQuantityToReduce(),
+                    productInfo.getOriginalVersion()
+            );
 
+            if (!success) {
+                throw new BusinessException("库存更新失败，可能存在并发操作，请重试");
+            }
+        }
         for (SaleDetail detail : details) {
             detail.setOrderId(order.getId());
             saleDetailMapper.insert(detail);

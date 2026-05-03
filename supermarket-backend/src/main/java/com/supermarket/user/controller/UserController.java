@@ -88,8 +88,8 @@ public class UserController {
      * 删除员工 (逻辑删除)
      * DELETE /user/1
      */
-    @DeleteMapping("/{id}")
-    public Result<Boolean> delete(@PathVariable Long id) {
+    @DeleteMapping("/{id:[0-9]+}")
+    public Result<Boolean> delete(@PathVariable("id") Long id) {
         boolean flag = userService.removeById(id);
         return flag ? Result.success() : Result.error("删除失败");
     }
@@ -109,8 +109,8 @@ public class UserController {
      * 根据ID获取员工详情
      * GET /user/1
      */
-    @GetMapping("/{id}")
-    public Result<User> getById(@PathVariable Long id) {
+    @GetMapping("/{id:[0-9]+}")
+    public Result<User> getById(@PathVariable("id") Long id) {
         User user = userService.getById(id);
         if (user != null) {
             user.setPassword(null);

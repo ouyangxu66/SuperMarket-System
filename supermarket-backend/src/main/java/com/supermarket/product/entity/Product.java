@@ -34,7 +34,8 @@ public class Product implements Serializable {
     private Date latestProductionDate;  // 最新生产日期
     private Integer shelfLifeDays;      // 保质期天数
     private Date earliestExpirationDate; // 最早到期日期
-
+    // 添加乐观锁版本号字段
+    private Integer version;           // 乐观锁版本号
     @TableField(fill = FieldFill.INSERT)
     private Date createTime;
 
@@ -87,7 +88,9 @@ public class Product implements Serializable {
     
     public Date getEarliestExpirationDate() { return earliestExpirationDate; }
     public void setEarliestExpirationDate(Date earliestExpirationDate) { this.earliestExpirationDate = earliestExpirationDate; }
-    
+    // 新增版本号的getter/setter
+    public Integer getVersion() { return version; }
+    public void setVersion(Integer version) { this.version = version; }
     public Date getCreateTime() { return createTime; }
     public void setCreateTime(Date createTime) { this.createTime = createTime; }
     public Date getUpdateTime() { return updateTime; }

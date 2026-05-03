@@ -83,13 +83,13 @@ public class DataInitializer implements CommandLineRunner {
         createAndSaveMenu(inventoryList.getId(), "库存入库", null, null, "inventory:in", null, "F", 1);
         createAndSaveMenu(inventoryList.getId(), "库存出库", null, null, "inventory:out", null, "F", 2);
         createAndSaveMenu(inventoryRoot.getId(), "库存盘点", "/inventory/count", "inventory/InventoryCountView", "inventory:count", "Checked", "C", 2);
-
+        Menu inventoryRestock = createAndSaveMenu(inventoryRoot.getId(), "智能补货建议", "/inventory/restock", "inventory/RestockSuggestionView", "inventory:restock", "TrendCharts", "C", 3);
         // 2. 分配权限 (为了简化，先全部分配给管理员，部分分配给店长等)
         assignAllPermissionsToAdmin();
         assignPermissionsToRole("ROLE_STORE_MANAGER", Arrays.asList("dashboard:view", "product:list", "product:add", "product:update", "category:list", "inventory:list", "inventory:count", "user:list"));
         assignPermissionsToRole("ROLE_CASHIER", List.of("dashboard:view")); // 之后加收银
         assignPermissionsToRole("ROLE_WAREHOUSE_KEEPER", Arrays.asList("dashboard:view", "inventory:list", "inventory:in", "inventory:out", "inventory:count", "product:list"));
-        assignPermissionsToRole("ROLE_PURCHASER", Arrays.asList("dashboard:view", "product:list", "inventory:list"));
+        assignPermissionsToRole("ROLE_PURCHASER", Arrays.asList("dashboard:view", "product:list", "inventory:list", "inventory:restock"));
     }
 
     private void assignAllPermissionsToAdmin() {

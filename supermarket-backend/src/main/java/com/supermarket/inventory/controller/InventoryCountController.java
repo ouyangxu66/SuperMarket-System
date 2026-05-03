@@ -43,8 +43,8 @@ public class InventoryCountController {
      * 获取盘点详情
      * GET /inventory/count/{id}
      */
-    @GetMapping("/{id}")
-    public Result<InventoryCount> getInventoryCount(@PathVariable Long id) {
+    @GetMapping("/{id:[0-9]+}")
+    public Result<InventoryCount> getInventoryCount(@PathVariable("id") Long id) {
         InventoryCount inventoryCount = inventoryCountService.getById(id);
         if (inventoryCount == null) {
             return Result.error("盘点任务不存在");
@@ -66,8 +66,8 @@ public class InventoryCountController {
      * 开始盘点
      * PUT /inventory/count/{id}/start
      */
-    @PutMapping("/{id}/start")
-    public Result<String> startCount(@PathVariable Long id) {
+    @PutMapping("/{id:[0-9]+}/start")
+    public Result<String> startCount(@PathVariable("id") Long id) {
         try {
             inventoryCountService.startCount(id);
             return Result.success("开始盘点成功");
@@ -80,8 +80,8 @@ public class InventoryCountController {
      * 完成盘点
      * PUT /inventory/count/{id}/complete
      */
-    @PutMapping("/{id}/complete")
-    public Result<String> completeCount(@PathVariable Long id) {
+    @PutMapping("/{id:[0-9]+}/complete")
+    public Result<String> completeCount(@PathVariable("id") Long id) {
         try {
             inventoryCountService.completeCount(id);
             return Result.success("完成盘点成功");
@@ -94,8 +94,8 @@ public class InventoryCountController {
      * 取消盘点
      * PUT /inventory/count/{id}/cancel
      */
-    @PutMapping("/{id}/cancel")
-    public Result<String> cancelCount(@PathVariable Long id) {
+    @PutMapping("/{id:[0-9]+}/cancel")
+    public Result<String> cancelCount(@PathVariable("id") Long id) {
         try {
             inventoryCountService.cancelCount(id);
             return Result.success("取消盘点成功");
@@ -108,8 +108,8 @@ public class InventoryCountController {
      * 获取盘点详情列表
      * GET /inventory/count/{id}/details
      */
-    @GetMapping("/{id}/details")
-    public Result<List<InventoryCountDetail>> getDetails(@PathVariable Long id) {
+    @GetMapping("/{id:[0-9]+}/details")
+    public Result<List<InventoryCountDetail>> getDetails(@PathVariable("id") Long id) {
         List<InventoryCountDetail> details = inventoryCountService.getDetailsByCountId(id);
         return Result.success(details);
     }
@@ -118,8 +118,8 @@ public class InventoryCountController {
      * 添加盘点详情
      * POST /inventory/count/{countId}/detail
      */
-    @PostMapping("/{countId}/detail")
-    public Result<String> addDetail(@PathVariable Long countId, @RequestBody InventoryCountDetail detail) {
+    @PostMapping("/{countId:[0-9]+}/detail")
+    public Result<String> addDetail(@PathVariable("countId") Long countId, @RequestBody InventoryCountDetail detail) {
         detail.setCountId(countId);
         inventoryCountService.addDetail(detail);
         return Result.success("添加盘点详情成功");
@@ -139,8 +139,8 @@ public class InventoryCountController {
      * 删除盘点详情
      * DELETE /inventory/count/detail/{id}
      */
-    @DeleteMapping("/detail/{id}")
-    public Result<String> deleteDetail(@PathVariable Long id) {
+    @DeleteMapping("/detail/{id:[0-9]+}")
+    public Result<String> deleteDetail(@PathVariable("id") Long id) {
         InventoryCountDetail detail = new InventoryCountDetail();
         detail.setId(id);
         detail.setDeleted(1); // 逻辑删除
@@ -151,8 +151,8 @@ public class InventoryCountController {
      * 导出盘点报告
      * GET /inventory/count/{id}/export
      */
-    @GetMapping("/{id}/export")
-    public void exportCountReport(@PathVariable Long id, javax.servlet.http.HttpServletResponse response) {
+    @GetMapping("/{id:[0-9]+}/export")
+    public void exportCountReport(@PathVariable("id") Long id, javax.servlet.http.HttpServletResponse response) {
         inventoryCountService.exportCountReport(response, id);
     }
 }

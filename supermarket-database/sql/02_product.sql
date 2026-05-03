@@ -67,21 +67,6 @@ CREATE TABLE `product` (
                            KEY `idx_expiration_date` (`earliest_expiration_date`) USING BTREE COMMENT '到期日期索引'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='商品信息表';
 
--- 为现有的product表添加过期日期相关字段
--- 适用于已有数据的数据库升级
-
-USE supermarket_db;
-
--- 添加过期日期相关字段
-ALTER TABLE `product` 
-ADD COLUMN `latest_production_date` date DEFAULT NULL COMMENT '最新生产日期' AFTER `remark`,
-ADD COLUMN `shelf_life_days` int(11) DEFAULT NULL COMMENT '保质期天数' AFTER `latest_production_date`,
-ADD COLUMN `earliest_expiration_date` date DEFAULT NULL COMMENT '最早到期日期' AFTER `shelf_life_days`;
-
--- 为到期日期字段添加索引以提高查询性能
-ALTER TABLE `product` ADD INDEX `idx_expiration_date` (`earliest_expiration_date`);
-
--- 可选：如果需要根据现有数据计算到期日期，可以执行以下更新语句
--- UPDATE `product` SET `earliest_expiration_date` = DATE_ADD(`latest_production_date`, INTERVAL `shelf_life_days` DAY) WHERE `latest_production_date` IS NOT NULL AND `shelf_life_days` IS NOT NULL;
-
 SET FOREIGN_KEY_CHECKS = 1;
+-- 在 product 表中添加 version 字段用于乐观锁
+ALTER TABLE `product` ADD COLUMN `version` int(11) NOT NULL DEFAULT 0 COMMENT '乐观锁版本号';

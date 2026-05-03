@@ -2,6 +2,7 @@ package com.supermarket.product.service.impl;
 
 import com.alibaba.excel.EasyExcel;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
@@ -299,5 +300,16 @@ public class ProductServiceImpl extends ServiceImpl<ProductMapper, Product> impl
     @Override
     public void physicalDeleteProduct(Long id) {
         baseMapper.physicalDeleteById(id);
+    }
+    @Override
+    public boolean updateStockWithOptimisticLock(Long productId, Integer quantityToReduce, Integer expectedVersion) {
+        // 使用 MyBatis Plus 的条件构造器进行乐观锁更新
+        LambdaUpdateWrapper<Product> updateWrapper = new LambdaUpdateWrapper<>();
+        updateWrapper.eq(Product::getId, productId)
+                .eq(Product::getVersion, expectedVersion)  // 版本号匹配
+                .setSql("stock = stock - " + quantityToReduce)  // 减少库存
+                .set(Product::getVersion, expectedVersion + 1); // 版本号+1
+
+        return this.update(updateWrapper);
     }
 }

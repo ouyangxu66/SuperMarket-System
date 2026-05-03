@@ -48,8 +48,8 @@ public class CategoryController {
      * 删除分类
      * DELETE /product/category/{id}
      */
-    @DeleteMapping("/{id}")
-    public Result<Boolean> delete(@PathVariable Long id) {
+    @DeleteMapping("/{id:[0-9]+}")
+    public Result<Boolean> delete(@PathVariable("id") Long id) {
         // 调用我们自定义的、带安全校验的删除方法
         return Result.success(categoryService.removeCategoryById(id));
     }

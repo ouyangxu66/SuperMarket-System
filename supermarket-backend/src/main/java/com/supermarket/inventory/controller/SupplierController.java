@@ -79,8 +79,8 @@ public class SupplierController {
      * 删除供应商
      * DELETE /inventory/supplier/{id}
      */
-    @DeleteMapping("/{id}")
-    public Result<?> delete(@PathVariable Long id) {
+    @DeleteMapping("/{id:[0-9]+}")
+    public Result<?> delete(@PathVariable("id") Long id) {
         boolean success = supplierService.removeById(id);
         return success ? Result.success("删除成功") : Result.error("删除失败");
     }

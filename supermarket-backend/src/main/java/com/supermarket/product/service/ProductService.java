@@ -76,4 +76,12 @@ public interface ProductService extends IService<Product> {
      * 物理删除商品
      */
     void physicalDeleteProduct(Long id);
+    /**
+     * 使用乐观锁更新库存
+     * @param productId 商品ID
+     * @param quantityToReduce 要减少的库存数量
+     * @param expectedVersion 期望的版本号
+     * @return 是否更新成功
+     */
+    boolean updateStockWithOptimisticLock(Long productId, Integer quantityToReduce, Integer expectedVersion);
 }

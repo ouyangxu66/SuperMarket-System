@@ -97,6 +97,18 @@ const router = createRouter({
           meta: { title: '智能补货建议' }
         },
         {
+          path: '/purchase/plan',
+          name: 'purchase-plan',
+          component: () => import('../views/purchase/PurchasePlanView.vue'),
+          meta: { title: '采购计划' }
+        },
+        {
+          path: '/purchase/order',
+          name: 'purchase-order',
+          component: () => import('../views/purchase/PurchaseOrderView.vue'),
+          meta: { title: '采购订单' }
+        },
+        {
           path: '/profile',
           name: 'profile',
           component: () => import('../views/ProfileView.vue'),

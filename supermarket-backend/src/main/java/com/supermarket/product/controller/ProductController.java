@@ -45,8 +45,8 @@ public class ProductController {
      * 根据ID获取商品详情
      * GET /api/product/{id}
      */
-    @GetMapping("/{id}")
-    public Result<Product> getProductById(@PathVariable Long id) {
+    @GetMapping("/{id:[0-9]+}")
+    public Result<Product> getProductById(@PathVariable("id") Long id) {
         Product product = productService.getById(id);
         if (product == null) {
             return Result.error("商品不存在");
@@ -57,6 +57,7 @@ public class ProductController {
         }
         return Result.success(product);
     }
+
 
     /**
      * 新增商品
@@ -90,8 +91,8 @@ public class ProductController {
      * 修改商品状态 (上架/下架)
      * PUT /api/product/{id}/status/{status}
      */
-    @PutMapping("/{id}/status/{status}")
-    public Result<String> updateProductStatus(@PathVariable Long id, @PathVariable Integer status) {
+    @PutMapping("/{id:[0-9]+}/status/{status}")
+    public Result<String> updateProductStatus(@PathVariable("id") Long id, @PathVariable Integer status) {
         try {
             productService.updateStatus(id, status);
             return Result.success("状态更新成功");
@@ -104,8 +105,8 @@ public class ProductController {
      * 删除商品 (物理删除)
      * DELETE /api/product/{id}
      */
-    @DeleteMapping("/{id}")
-    public Result<String> deleteProduct(@PathVariable Long id) {
+    @DeleteMapping("/{id:[0-9]+}")
+    public Result<String> deleteProduct(@PathVariable("id") Long id) {
         Product product = productService.getById(id);
         if (product == null) {
             return Result.error("商品不存在");

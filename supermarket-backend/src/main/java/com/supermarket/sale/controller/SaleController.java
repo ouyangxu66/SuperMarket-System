@@ -82,8 +82,8 @@ public class SaleController {
     /**
      * 获取销售订单详情
      */
-    @GetMapping("/{id}")
-    public Result<SaleOrder> detail(@PathVariable Long id) {
+    @GetMapping("/{id:[0-9]+}")
+    public Result<SaleOrder> detail(@PathVariable("id") Long id) {
         SaleOrder order = saleService.getById(id);
         if (order == null || (order.getDeleted() != null && order.getDeleted() == 1)) {
             return Result.error("销售订单不存在");

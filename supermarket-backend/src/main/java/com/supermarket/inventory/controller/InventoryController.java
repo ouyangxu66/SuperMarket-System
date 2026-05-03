@@ -40,8 +40,8 @@ public class InventoryController {
      * GET /inventory/check-low-stock/{id}
      * 返回true表示库存不足，false表示库存充足
      */
-    @GetMapping("/check-low-stock/{id}")
-    public Result<Boolean> checkLowStock(@PathVariable Long id) {
+    @GetMapping("/check-low-stock/{id:[0-9]+}")
+    public Result<Boolean> checkLowStock(@PathVariable("id") Long id) {
         boolean isLowStock = inventoryService.isLowStock(id);
         return Result.success(isLowStock);
     }
@@ -51,8 +51,8 @@ public class InventoryController {
      * GET /inventory/detail/{id}
      * 返回指定商品的库存详情
      */
-    @GetMapping("/detail/{id}")
-    public Result<Product> getInventoryDetail(@PathVariable Long id) {
+    @GetMapping("/detail/{id:[0-9]+}")
+    public Result<Product> getInventoryDetail(@PathVariable("id") Long id) {
         Product product = inventoryService.getInventoryDetail(id);
         if (product == null) {
             return Result.error("商品不存在");

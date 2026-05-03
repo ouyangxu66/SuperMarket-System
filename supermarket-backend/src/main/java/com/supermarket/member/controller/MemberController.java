@@ -43,8 +43,8 @@ public class MemberController {
     /**
      * 根据ID获取会员详情
      */
-    @GetMapping("/{id}")
-    public Result<Member> getMemberById(@PathVariable Long id) {
+    @GetMapping("/{id:[0-9]+}")
+    public Result<Member> getMemberById(@PathVariable("id") Long id) {
         Member member = memberService.getById(id);
         if (member == null || (member.getDeleted() != null && member.getDeleted() == 1)) {
             return Result.error("会员不存在");
@@ -73,8 +73,8 @@ public class MemberController {
     /**
      * 删除会员（逻辑删除）
      */
-    @DeleteMapping("/{id}")
-    public Result<Boolean> deleteMember(@PathVariable Long id) {
+    @DeleteMapping("/{id:[0-9]+}")
+    public Result<Boolean> deleteMember(@PathVariable("id") Long id) {
         memberService.deleteMember(id);
         return Result.success();
     }

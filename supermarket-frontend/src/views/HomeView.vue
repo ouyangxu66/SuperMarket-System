@@ -68,7 +68,16 @@
             <el-menu-item index="/inventory/count" v-if="hasPermission(['ROLE_ADMIN', 'ROLE_STORE_MANAGER', 'ROLE_WAREHOUSE_KEEPER'])">库存盘点</el-menu-item>
             <el-menu-item index="/inventory/restock">智能补货建议</el-menu-item>
           </el-sub-menu>
-
+          <el-sub-menu index="5" v-if="hasPermission(['ROLE_PURCHASER'])">
+            <template #title>
+              <el-icon><ShoppingCart /></el-icon>
+              <span>采购管理</span>
+            </template>
+            <el-menu-item index="/inventory/list">库存预警查看</el-menu-item>
+            <el-menu-item index="/inventory/restock">补货建议</el-menu-item>
+            <el-menu-item index="/purchase/plan">做采购计划</el-menu-item>
+            <el-menu-item index="/purchase/order">下采购单</el-menu-item>
+          </el-sub-menu>
         </el-menu>
       </el-aside>
 
@@ -107,7 +116,7 @@
 </template>
 
 <script setup>
-import { ArrowDown, Box, Goods, HomeFilled, User } from '@element-plus/icons-vue'
+import { ArrowDown, Box, Goods, HomeFilled, User, ShoppingCart } from '@element-plus/icons-vue'
 import { computed, ref, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { logout, getInfo } from '@/api/auth'
