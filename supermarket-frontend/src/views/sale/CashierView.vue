@@ -158,7 +158,8 @@
         <div class="panel-section quick-actions">
           <div class="section-title">快捷功能区</div>
           <div class="quick-buttons">
-            <el-button class="quick-btn" @click="holdOrder">挂单</el-button>
+            <el-button class="quick-btn" @click="handleHoldOrder">挂单</el-button>
+            <el-button class="quick-btn" @click="openHoldDialog">取单</el-button>
             <el-button class="quick-btn" @click="cancelOrder">取消</el-button>
             <el-button class="quick-btn" @click="returnGoods">退货</el-button>
             <el-button class="quick-btn" @click="openDrawer">开钱箱</el-button>
@@ -282,8 +283,49 @@
       </div>
     </div>
   </div>
-</template>
+  <!-- 新增：挂单列表对话框 -->
+  <el-dialog
+      v-model="showHoldDialog"
+      title="挂单列表"
+      width="900px"
+      :close-on-click-modal="false"
+  >
+    <el-table :data="holdList" stripe border max-height="500">
+      <el-table-column prop="holdNo" label="挂单号" width="200" />
+      <el-table-column label="会员" width="120">
+        <template #default="{ row }">
+          {{ row.member?.name || '-' }}
+        </template>
+      </el-table-column>
+      <el-table-column prop="itemCount" label="商品数" width="80" align="center" />
+      <el-table-column label="总金额" width="120" align="right">
+        <template #default="{ row }">
+          ¥ {{ Number(row.totalAmount || 0).toFixed(2) }}
+        </template>
+      </el-table-column>
+      <el-table-column prop="remark" label="备注" min-width="150" show-overflow-tooltip />
+      <el-table-column label="挂单时间" width="180">
+        <template #default="{ row }">
+          {{ formatDateTime(row.createTime) }}
+        </template>
+      </el-table-column>
+      <el-table-column label="操作" width="150" align="center" fixed="right">
+        <template #default="{ row }">
+          <el-button type="primary" link @click="handleRestoreOrder(row.holdNo)">
+            取单
+          </el-button>
+          <el-button type="danger" link @click="handleCancelHold(row.holdNo)">
+            取消
+          </el-button>
+        </template>
+      </el-table-column>
+    </el-table>
 
+    <template #footer>
+      <el-button @click="showHoldDialog = false">关闭</el-button>
+    </template>
+  </el-dialog>
+</template>
 <script setup>
 import { computed, onMounted, onUnmounted, reactive, ref, watch } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
@@ -305,6 +347,8 @@ const barcodeInput = ref('')
 const barcodeInputRef = ref(null)
 const currentPage = ref(1)
 const pageSize = ref(15)
+const showHoldDialog = ref(false)
+const holdList = ref([])
 
 
 // 当前用户信息
@@ -518,6 +562,147 @@ const clearCart = (showAlert = true) => {
     ElMessage.success('已清空购物车')
   }
 }
+// ==================== 新增：挂单功能 ====================
+
+/**
+ * 生成挂单号
+ */
+const generateHoldNo = () => {
+  const date = new Date()
+  const dateStr = date.toISOString().slice(0, 10).replace(/-/g, '')
+  const timeStr = date.toTimeString().slice(0, 8).replace(/:/g, '')
+  const randomNum = Math.floor(Math.random() * 100).toString().padStart(2, '0')
+  return `HD${dateStr}${timeStr}${randomNum}`
+}
+
+/**
+ * 挂单
+ */
+const handleHoldOrder = () => {
+  if (cartList.value.length === 0) {
+    ElMessage.warning('购物车为空，无需挂单')
+    return
+  }
+
+  ElMessageBox.prompt('请输入备注（可选）', '挂单', {
+    confirmButtonText: '确定',
+    cancelButtonText: '取消',
+    inputPlaceholder: '例如：顾客去拿其他商品'
+  }).then(({ value }) => {
+    const holdNo = generateHoldNo()
+
+    const holdData = {
+      holdNo,
+      orderNo: currentOrderNo.value,
+      items: JSON.parse(JSON.stringify(cartList.value)),
+      member: selectedMember.value ? JSON.parse(JSON.stringify(selectedMember.value)) : null,
+      totalAmount: totalAmount.value,
+      itemCount: totalQuantity.value,
+      remark: value || '',
+      createTime: new Date().toISOString()
+    }
+
+    // 从 localStorage 获取已有挂单列表
+    let holds = JSON.parse(localStorage.getItem('holdOrders') || '[]')
+    holds.push(holdData)
+    localStorage.setItem('holdOrders', JSON.stringify(holds))
+
+    // 清空当前购物车
+    clearCart()
+
+    ElMessage.success(`挂单成功！挂单号：${holdNo}`)
+  }).catch(() => {})
+}
+
+/**
+ * 加载挂单列表
+ */
+const loadHoldList = () => {
+  const holds = JSON.parse(localStorage.getItem('holdOrders') || '[]')
+  // 按时间倒序排列
+  holdList.value = holds.sort((a, b) =>
+      new Date(b.createTime) - new Date(a.createTime)
+  )
+}
+
+/**
+ * 取单
+ */
+const handleRestoreOrder = (holdNo) => {
+  const holds = JSON.parse(localStorage.getItem('holdOrders') || '[]')
+  const index = holds.findIndex(item => item.holdNo === holdNo)
+
+  if (index === -1) {
+    ElMessage.error('挂单不存在')
+    return
+  }
+
+  if (cartList.value.length > 0) {
+    ElMessageBox.confirm('当前购物车有商品，取单后将清空，是否继续？', '提示', {
+      type: 'warning'
+    }).then(() => {
+      restoreOrderData(holds[index], holds, index)
+    }).catch(() => {})
+  } else {
+    restoreOrderData(holds[index], holds, index)
+  }
+}
+
+/**
+ * 恢复挂单数据
+ */
+const restoreOrderData = (holdData, holds, index) => {
+  // 恢复购物车
+  cartList.value = holdData.items
+
+  // 恢复会员信息
+  selectedMember.value = holdData.member
+
+  // 恢复订单号
+  currentOrderNo.value = holdData.orderNo
+
+  // 从挂单列表中移除
+  holds.splice(index, 1)
+  localStorage.setItem('holdOrders', JSON.stringify(holds))
+
+  // 关闭对话框
+  showHoldDialog.value = false
+
+  // 刷新挂单列表
+  loadHoldList()
+
+  ElMessage.success('取单成功')
+}
+
+/**
+ * 取消挂单
+ */
+const handleCancelHold = (holdNo) => {
+  ElMessageBox.confirm('确认取消该挂单吗？', '提示', {
+    type: 'warning'
+  }).then(() => {
+    let holds = JSON.parse(localStorage.getItem('holdOrders') || '[]')
+    const index = holds.findIndex(item => item.holdNo === holdNo)
+
+    if (index !== -1) {
+      holds.splice(index, 1)
+      localStorage.setItem('holdOrders', JSON.stringify(holds))
+      loadHoldList()
+      ElMessage.success('已取消挂单')
+    }
+  }).catch(() => {})
+}
+
+/**
+ * 打开挂单对话框
+ */
+const openHoldDialog = () => {
+  loadHoldList()
+  showHoldDialog.value = true
+}
+
+// ==================== 挂单功能结束 ====================
+
 
 const calcItemAmount = (item) => Number(item.price || 0) * Number(item.quantity || 0)
 
@@ -760,12 +945,6 @@ const printReceipt = () => {
     setTimeout(() => printWindow.close(), 1000)
   }, 500)
 }
-
-// 快捷功能
-const holdOrder = () => {
-  ElMessage.info('挂单功能开发中')
-}
-
 const cancelOrder = () => {
   if (cartList.value.length > 0) {
     ElMessageBox.confirm('确认清空购物车？', '提示', {
@@ -785,6 +964,18 @@ const returnGoods = () => {
 const openDrawer = () => {
   ElMessage.info('钱箱已打开')
 }
+const formatDateTime = (timeStr) => {
+  if (!timeStr) return ''
+  const date = new Date(timeStr)
+  return date.toLocaleString('zh-CN', {
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit'
+  })
+}
+
 </script>
 
 <style scoped>
